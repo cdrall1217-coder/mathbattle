@@ -207,6 +207,71 @@ const QUADRILATERAL_PROPERTY_QUESTIONS = {
 // 다각형 이름 (인덱스 0 = 변 3개 삼각형)
 const POLYGON_NAMES = ["삼각형", "사각형", "오각형", "육각형", "칠각형", "팔각형", "구각형", "십각형"];
 
+/* ===== 수의 범위 공용 함수 (5학년 2학기) ===== */
+
+/** value가 [lower, upper] 구간(경곗값 포함 여부를 각각 지정)에 속하는지 판별한다. */
+function isInRange(value, lower, lowerInclusive, upper, upperInclusive) {
+    const lowerOk = lowerInclusive ? value >= lower : value > lower;
+    const upperOk = upperInclusive ? value <= upper : value < upper;
+    return lowerOk && upperOk;
+}
+
+/** [lower, upper] 구간(경곗값 포함 여부를 각각 지정)에 속하는 자연수의 개수를 구한다. */
+function countInRange(lower, lowerInclusive, upper, upperInclusive) {
+    const start = lowerInclusive ? lower : lower + 1;
+    const end = upperInclusive ? upper : upper - 1;
+    return Math.max(0, end - start + 1);
+}
+
+/* ===== 올림·버림·반올림 공용 함수 (5학년 2학기) ===== */
+
+const ROUND_PLACES = [10, 100, 1000];
+const ROUND_PLACE_LABELS = { 10: "십의 자리", 100: "백의 자리", 1000: "천의 자리" };
+
+/** n을 place(10/100/1000) 단위로 올림·버림·반올림한다. mode: 'up'|'down'|'nearest' */
+function roundToPlace(n, place, mode) {
+    const remainder = n % place;
+    const base = n - remainder;
+    if (mode === "down") return base;
+    if (mode === "up") return remainder === 0 ? base : base + place;
+    return remainder * 2 >= place ? base + place : base; // nearest
+}
+
+/** place 단위로 반올림한 결과값(roundedValue)이 나올 수 있는 원래 자연수의 최솟값·최댓값을 구한다. */
+function roundedRangeBounds(roundedValue, place) {
+    const half = place / 2;
+    return { min: roundedValue - half, max: roundedValue + half - 1 };
+}
+
+/* ===== 분수 곱셈 공용 함수 (5학년 2학기) ===== */
+
+/**
+ * 자연수부(whole)+분수부(numerator/denominator)로 표현된 두 수를 곱한다.
+ * 두 수를 모두 가분수 형태의 정수 분자로 바꾼 뒤 분자끼리, 분모끼리 정수로 곱하고
+ * (기존 simplifyFraction, normalizeMixedNumber 재사용) 기약분수·대분수로 정규화한다.
+ * 자연수는 (해당 수, 0, 1)로 표현하면 동일한 계산식으로 처리된다.
+ * @returns {{whole:number, numerator:number, denominator:number}}
+ */
+function multiplyMixedFractions(w1, n1, d1, w2, n2, d2) {
+    const num1 = w1 * d1 + n1; // 가분수 분자
+    const num2 = w2 * d2 + n2;
+    const resultNumerator = num1 * num2;
+    const resultDenominator = d1 * d2;
+    const simplified = simplifyFraction(resultNumerator, resultDenominator);
+    const norm = normalizeMixedNumber(0, simplified.numerator, simplified.denominator);
+    return { whole: norm.whole, numerator: norm.numerator, denominator: simplified.denominator };
+}
+
+/* ===== 소수 곱셈 공용 함수 (5학년 2학기) - 기존 randDecimalScaled·formatScaledDecimal 확장 ===== */
+
+/**
+ * 정수로 스케일된 두 소수를 정수 곱셈으로만 곱한다 (JS 부동소수점 곱셈 미사용).
+ * @returns {{scaledProduct:number, decimals:number}}
+ */
+function multiplyScaledDecimals(scaledA, decimalsA, scaledB, decimalsB) {
+    return { scaledProduct: scaledA * scaledB, decimals: decimalsA + decimalsB };
+}
+
 const problemGenerators = {
     add1() {
         const n1 = Math.floor(Math.random() * 9) + 1;
@@ -1611,6 +1676,564 @@ const problemGenerators = {
         );
         const formula = `두 대각선이 ${dim.d1}cm, ${dim.d2}cm인 마름모의 넓이`;
         return { formulaFront: formula, formulaBack: formula, answer: formatCm2((dim.d1 * dim.d2) / 2) };
+    },
+
+    /* ===== 5학년 2학기 - 수의 범위와 어림하기 ===== */
+
+    // ① 이상·이하 범위 판단 (경곗값 포함)
+    g5s2_range_inclusive() {
+        const lower = randInt(1, 500);
+        const upper = randInt(lower + 1, lower + 100);
+        const wantIncluded = Math.random() < 0.5;
+        let candidate;
+        if (wantIncluded) {
+            // 절반 정도는 경곗값 자체를, 나머지는 구간 내 임의의 값을 후보로 사용
+            candidate = Math.random() < 0.5 ? (Math.random() < 0.5 ? lower : upper) : randInt(lower, upper);
+        } else {
+            candidate = generateUntilValid(
+                () => randInt(Math.max(1, lower - 50), upper + 50),
+                (v) => v < lower || v > upper
+            );
+        }
+        const included = isInRange(candidate, lower, true, upper, true);
+        const formula = `${lower} 이상 ${upper} 이하인 수의 범위에 ${candidate}은(는) 포함되는가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: included ? "범위에 포함됩니다" : "범위에 포함되지 않습니다" };
+    },
+
+    // ② 초과·미만 범위 판단 (경곗값 제외)
+    g5s2_range_exclusive() {
+        const lower = randInt(1, 500);
+        const upper = randInt(lower + 2, lower + 100);
+        const wantIncluded = Math.random() < 0.5;
+        let candidate;
+        if (wantIncluded) {
+            candidate = randInt(lower + 1, upper - 1);
+        } else {
+            // 절반 정도는 경곗값과 같은 후보를, 나머지는 구간 밖의 값을 사용
+            candidate = Math.random() < 0.5
+                ? (Math.random() < 0.5 ? lower : upper)
+                : generateUntilValid(
+                    () => randInt(Math.max(1, lower - 50), upper + 50),
+                    (v) => v <= lower || v >= upper
+                );
+        }
+        const included = isInRange(candidate, lower, false, upper, false);
+        const formula = `${lower} 초과 ${upper} 미만인 수의 범위에 ${candidate}은(는) 포함되는가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: included ? "범위에 포함됩니다" : "범위에 포함되지 않습니다" };
+    },
+
+    // ③ 범위에 속하는 자연수의 개수
+    g5s2_range_count() {
+        const types = [
+            { lowerInclusive: true, upperInclusive: true, lowerWord: "이상", upperWord: "이하" },
+            { lowerInclusive: false, upperInclusive: false, lowerWord: "초과", upperWord: "미만" },
+            { lowerInclusive: true, upperInclusive: false, lowerWord: "이상", upperWord: "미만" },
+            { lowerInclusive: false, upperInclusive: true, lowerWord: "초과", upperWord: "이하" }
+        ];
+        const type = types[randInt(0, types.length - 1)];
+        const result = generateUntilValid(
+            () => {
+                const lower = randInt(1, 100);
+                const upper = randInt(lower + 1, lower + 30);
+                const count = countInRange(lower, type.lowerInclusive, upper, type.upperInclusive);
+                return { lower, upper, count };
+            },
+            (v) => v.count >= 1
+        );
+        const formula = `${result.lower} ${type.lowerWord} ${result.upper} ${type.upperWord}인 자연수는 모두 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${result.count}개` };
+    },
+
+    // ④ 조건을 만족하는 가장 작은 수·가장 큰 수 (답이 하나로 정해짐)
+    g5s2_range_extreme() {
+        const types = [
+            { lowerInclusive: true, upperInclusive: true, lowerWord: "이상", upperWord: "이하" },
+            { lowerInclusive: false, upperInclusive: false, lowerWord: "초과", upperWord: "미만" },
+            { lowerInclusive: true, upperInclusive: false, lowerWord: "이상", upperWord: "미만" },
+            { lowerInclusive: false, upperInclusive: true, lowerWord: "초과", upperWord: "이하" }
+        ];
+        const type = types[randInt(0, types.length - 1)];
+        const askSmallest = Math.random() < 0.5;
+        const result = generateUntilValid(
+            () => {
+                const lower = randInt(1, 500);
+                const upper = randInt(lower + 1, lower + 100);
+                const count = countInRange(lower, type.lowerInclusive, upper, type.upperInclusive);
+                return { lower, upper, count };
+            },
+            (v) => v.count >= 1
+        );
+        const start = type.lowerInclusive ? result.lower : result.lower + 1;
+        const end = type.upperInclusive ? result.upper : result.upper - 1;
+        const target = askSmallest ? "가장 작은 수" : "가장 큰 수";
+        const formula = `${result.lower} ${type.lowerWord} ${result.upper} ${type.upperWord}인 자연수 중 ${target}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(askSmallest ? start : end) };
+    },
+
+    // ⑤ 올림 (십의 자리·백의 자리·천의 자리)
+    g5s2_round_up() {
+        const place = ROUND_PLACES[randInt(0, ROUND_PLACES.length - 1)];
+        const isExactMultiple = Math.random() < 0.3;
+        const n = isExactMultiple
+            ? randInt(1, Math.floor(99999 / place)) * place
+            : generateUntilValid(() => randInt(place, 99999), (v) => v % place !== 0);
+        const rounded = roundToPlace(n, place, "up");
+        const formula = `${formatNumber(n)}을 ${ROUND_PLACE_LABELS[place]}까지 올림하기`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatNumber(rounded) };
+    },
+
+    // ⑥ 버림 (십의 자리·백의 자리·천의 자리)
+    g5s2_round_down() {
+        const place = ROUND_PLACES[randInt(0, ROUND_PLACES.length - 1)];
+        const isExactMultiple = Math.random() < 0.3;
+        const n = isExactMultiple
+            ? randInt(1, Math.floor(99999 / place)) * place
+            : generateUntilValid(() => randInt(place, 99999), (v) => v % place !== 0);
+        const rounded = roundToPlace(n, place, "down");
+        const formula = `${formatNumber(n)}를 ${ROUND_PLACE_LABELS[place]}까지 버림하기`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatNumber(rounded) };
+    },
+
+    // ⑦ 반올림 (정확히 절반이 되는 경우도 생성)
+    g5s2_round_nearest() {
+        const place = ROUND_PLACES[randInt(0, ROUND_PLACES.length - 1)];
+        const isExactHalf = Math.random() < 0.2;
+        let n;
+        if (isExactHalf) {
+            const base = randInt(1, Math.floor(99999 / place) - 1) * place;
+            n = base + place / 2;
+        } else {
+            n = generateUntilValid(() => randInt(place, 99999), (v) => v % place !== place / 2);
+        }
+        const rounded = roundToPlace(n, place, "nearest");
+        const formula = `${formatNumber(n)}을 ${ROUND_PLACE_LABELS[place]}까지 반올림하기`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatNumber(rounded) };
+    },
+
+    // ⑧ 반올림한 값으로 원래 수의 범위 찾기
+    g5s2_round_reverse_range() {
+        const place = ROUND_PLACES[randInt(0, ROUND_PLACES.length - 1)];
+        const roundedValue = randInt(1, Math.floor(99999 / place)) * place;
+        const bounds = roundedRangeBounds(roundedValue, place);
+        const formula = `${ROUND_PLACE_LABELS[place]}까지 반올림한 값이 ${formatNumber(roundedValue)}인 자연수의 범위`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${formatNumber(bounds.min)} 이상 ${formatNumber(bounds.max)} 이하` };
+    },
+
+    /* ===== 5학년 2학기 - 분수의 곱셈 ===== */
+
+    // ⑨ 진분수 × 자연수
+    g5s2_fraction_proper_natural_mul() {
+        const d = randInt(2, 15);
+        const n = randInt(1, d - 1);
+        const natural = randInt(2, 12);
+        const result = multiplyMixedFractions(0, n, d, natural, 0, 1);
+        const formula = `${makeFractionHTML(n, d)} × ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑩ 대분수 × 자연수
+    g5s2_fraction_mixed_natural_mul() {
+        const d = randInt(2, 15);
+        const whole = randInt(1, 6);
+        const n = randInt(1, d - 1);
+        const natural = randInt(2, 10);
+        const result = multiplyMixedFractions(whole, n, d, natural, 0, 1);
+        const formula = `${formatMixedNumber(whole, n, d)} × ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑪ 자연수 × 진분수 (약분 가능/불가능 사례 모두 자연 발생)
+    g5s2_fraction_natural_proper_mul() {
+        const natural = randInt(2, 15);
+        const d = randInt(2, 15);
+        const n = randInt(1, d - 1);
+        const result = multiplyMixedFractions(natural, 0, 1, 0, n, d);
+        const formula = `${natural} × ${makeFractionHTML(n, d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑫ 자연수 × 대분수 (답이 지나치게 커지지 않도록 제한)
+    g5s2_fraction_natural_mixed_mul() {
+        const attempt = generateUntilValid(
+            () => {
+                const natural = randInt(2, 10);
+                const whole = randInt(1, 5);
+                const d = randInt(2, 12);
+                const n = randInt(1, d - 1);
+                const value = natural * (whole + n / d); // 상한 확인용 근사값(실제 정답 계산에는 사용하지 않음)
+                return { natural, whole, d, n, value };
+            },
+            (v) => v.value <= 60
+        );
+        const result = multiplyMixedFractions(attempt.natural, 0, 1, attempt.whole, attempt.n, attempt.d);
+        const formula = `${attempt.natural} × ${formatMixedNumber(attempt.whole, attempt.n, attempt.d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑬ 진분수 × 진분수
+    g5s2_fraction_proper_proper_mul() {
+        const d1 = randInt(2, 15);
+        const d2 = randInt(2, 15);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+        const result = multiplyMixedFractions(0, n1, d1, 0, n2, d2);
+        const formula = `${makeFractionHTML(n1, d1)} × ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑭ 진분수 × 대분수
+    g5s2_fraction_proper_mixed_mul() {
+        const d1 = randInt(2, 15);
+        const n1 = randInt(1, d1 - 1);
+        const whole2 = randInt(1, 5);
+        const d2 = randInt(2, 12);
+        const n2 = randInt(1, d2 - 1);
+        const result = multiplyMixedFractions(0, n1, d1, whole2, n2, d2);
+        const formula = `${makeFractionHTML(n1, d1)} × ${formatMixedNumber(whole2, n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑮ 대분수 × 대분수 (결과가 지나치게 커지지 않도록 제한)
+    g5s2_fraction_mixed_mixed_mul() {
+        const attempt = generateUntilValid(
+            () => {
+                const whole1 = randInt(1, 5);
+                const whole2 = randInt(1, 5);
+                const d1 = randInt(2, 12);
+                const d2 = randInt(2, 12);
+                const n1 = randInt(1, d1 - 1);
+                const n2 = randInt(1, d2 - 1);
+                const value = (whole1 + n1 / d1) * (whole2 + n2 / d2); // 상한 확인용 근사값
+                return { whole1, whole2, d1, d2, n1, n2, value };
+            },
+            (v) => v.value <= 40
+        );
+        const result = multiplyMixedFractions(attempt.whole1, attempt.n1, attempt.d1, attempt.whole2, attempt.n2, attempt.d2);
+        const formula = `${formatMixedNumber(attempt.whole1, attempt.n1, attempt.d1)} × ${formatMixedNumber(attempt.whole2, attempt.n2, attempt.d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    /* ===== 5학년 2학기 - 합동과 대칭 (그림 없이 답이 명확한 문제) ===== */
+
+    // ⑯ 합동인 도형의 대응 꼭짓점 (꼭짓점 순서 = 대응 순서)
+    g5s2_congruent_vertex() {
+        const isTriangle = Math.random() < 0.5;
+        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
+        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
+        const shape = isTriangle ? "△" : "□";
+        const idx = randInt(0, lettersA.length - 1);
+        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
+        const formula = `${notation}일 때 꼭짓점 ${lettersA[idx]}에 대응하는 꼭짓점`;
+        return { formulaFront: formula, formulaBack: formula, answer: lettersB[idx] };
+    },
+
+    // ⑰ 합동인 도형의 대응변 길이
+    g5s2_congruent_side() {
+        const isTriangle = Math.random() < 0.5;
+        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
+        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
+        const shape = isTriangle ? "△" : "□";
+        const idx1 = randInt(0, lettersA.length - 1);
+        const idx2 = (idx1 + 1) % lettersA.length; // 인접한 두 꼭짓점으로 변 구성
+        const sideA = lettersA[idx1] + lettersA[idx2];
+        const sideB = lettersB[idx1] + lettersB[idx2];
+        const length = randInt(2, 30);
+        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
+        const formula = `${notation}이고 ${sideA}=${length}cm일 때 ${sideB}의 길이`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${length}cm` };
+    },
+
+    // ⑱ 합동인 도형의 대응각
+    g5s2_congruent_angle() {
+        const isTriangle = Math.random() < 0.5;
+        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
+        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
+        const shape = isTriangle ? "△" : "□";
+        const idx = randInt(0, lettersA.length - 1);
+        const degree = randInt(20, 150);
+        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
+        const formula = `${notation}이고 ∠${lettersA[idx]}=${degree}°일 때 ∠${lettersB[idx]}의 크기`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${degree}°` };
+    },
+
+    // ⑲ 선대칭도형의 대응점과 대칭축 사이 거리 (두 거리는 항상 같음)
+    g5s2_line_symmetry_distance() {
+        const distance = randInt(2, 30);
+        const formula = `점 A와 A'이 대칭축에 대하여 서로 대응하고 A에서 대칭축까지의 거리가 ${distance}cm일 때 A'에서 대칭축까지의 거리`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${distance}cm` };
+    },
+
+    // ⑳ 점대칭도형의 대응점과 대칭 중심 사이 거리 (OA = OA')
+    g5s2_point_symmetry_distance() {
+        const distance = randInt(2, 30);
+        const formula = `점 A와 A'이 점 O를 중심으로 서로 대응하고 OA=${distance}cm일 때 OA'의 길이`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${distance}cm` };
+    },
+
+    /* ===== 5학년 2학기 - 소수의 곱셈 (정수 스케일 연산만 사용) ===== */
+
+    // ㉑ 소수 한 자리 수 × 자연수
+    g5s2_decimal_1_mul_natural() {
+        const decimalScaled = randDecimalScaled(1, 99); // 0.1~9.9
+        const natural = randInt(2, 20);
+        const product = multiplyScaledDecimals(decimalScaled, 1, natural, 0);
+        const formula = `${formatScaledDecimal(decimalScaled, 1)} × ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉒ 소수 두 자리 수 × 자연수 (끝자리 0 배제로 실제 소수 두 자리 수 보장)
+    g5s2_decimal_2_mul_natural() {
+        const decimalScaled = randDecimalScaled(1, 999); // 0.01~9.99
+        const natural = randInt(2, 20);
+        const product = multiplyScaledDecimals(decimalScaled, 2, natural, 0);
+        const formula = `${formatScaledDecimal(decimalScaled, 2)} × ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉓ 자연수 × 소수 한 자리 수
+    g5s2_natural_mul_decimal_1() {
+        const natural = randInt(2, 30);
+        const decimalScaled = randDecimalScaled(1, 99);
+        const product = multiplyScaledDecimals(natural, 0, decimalScaled, 1);
+        const formula = `${natural} × ${formatScaledDecimal(decimalScaled, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉔ 자연수 × 소수 두 자리 수
+    g5s2_natural_mul_decimal_2() {
+        const natural = randInt(2, 30);
+        const decimalScaled = randDecimalScaled(1, 999);
+        const product = multiplyScaledDecimals(natural, 0, decimalScaled, 2);
+        const formula = `${natural} × ${formatScaledDecimal(decimalScaled, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉕ 소수 한 자리 수 × 소수 한 자리 수 (곱이 1보다 작은 경우·1 이상인 경우 모두 자연 발생)
+    g5s2_decimal_1_mul_decimal_1() {
+        const a = randDecimalScaled(1, 99);
+        const b = randDecimalScaled(1, 99);
+        const product = multiplyScaledDecimals(a, 1, b, 1);
+        const formula = `${formatScaledDecimal(a, 1)} × ${formatScaledDecimal(b, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉖ 자릿수가 다른 소수 × 소수 (순서 무작위)
+    g5s2_decimal_mixed_mul() {
+        const a1 = randDecimalScaled(1, 99); // 소수 한 자리
+        const b2 = randDecimalScaled(1, 999); // 소수 두 자리
+        const product = multiplyScaledDecimals(a1, 1, b2, 2);
+        const swapOrder = Math.random() < 0.5;
+        const formula = swapOrder
+            ? `${formatScaledDecimal(b2, 2)} × ${formatScaledDecimal(a1, 1)}`
+            : `${formatScaledDecimal(a1, 1)} × ${formatScaledDecimal(b2, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(product.scaledProduct, product.decimals) };
+    },
+
+    // ㉗ 곱의 소수점 위치 (자연수 곱셈 결과를 이용해 소수 곱셈 정답을 계산)
+    g5s2_decimal_point_shift() {
+        // 두 수 중 적어도 하나는 소수가 되도록 자릿수를 배분하고,
+        // 실제로 소수점이 드러나도록(끝자리가 0이 되어 정수처럼 보이지 않도록) n1, n2를 함께 생성한다.
+        const distributions = [[1, 0], [0, 1], [1, 1], [2, 0], [0, 2]];
+        const result = generateUntilValid(
+            () => {
+                const n1 = randInt(2, 99);
+                const n2 = randInt(2, 99);
+                const [d1, d2] = distributions[randInt(0, distributions.length - 1)];
+                return { n1, n2, d1, d2 };
+            },
+            (v) => (v.d1 === 0 || v.n1 % Math.pow(10, v.d1) !== 0) && (v.d2 === 0 || v.n2 % Math.pow(10, v.d2) !== 0)
+        );
+        const { n1, n2, d1, d2 } = result;
+        const naturalProduct = n1 * n2;
+        const decimal1 = formatScaledDecimal(n1, d1);
+        const decimal2 = formatScaledDecimal(n2, d2);
+        const answer = formatScaledDecimal(naturalProduct, d1 + d2);
+        const formula = `${n1} × ${n2} = ${formatNumber(naturalProduct)}일 때 ${decimal1} × ${decimal2}`;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 5학년 2학기 - 직육면체 (겨냥도·전개도 없이 텍스트로 판단) ===== */
+
+    // ㉘ 입체도형 이름 찾기
+    g5s2_cuboid_name() {
+        const isCube = Math.random() < 0.5;
+        const formula = isCube ? "6개의 면이 모두 정사각형인 입체도형" : "모든 면이 직사각형인 입체도형";
+        return { formulaFront: formula, formulaBack: formula, answer: isCube ? "정육면체" : "직육면체" };
+    },
+
+    // ㉙ 면·모서리·꼭짓점의 개수
+    g5s2_cuboid_count() {
+        const shapeName = Math.random() < 0.5 ? "직육면체" : "정육면체";
+        const parts = [
+            { word: "면", count: 6 },
+            { word: "모서리", count: 12 },
+            { word: "꼭짓점", count: 8 }
+        ];
+        const pick = parts[randInt(0, parts.length - 1)];
+        const formula = `${shapeName}의 ${pick.word}은 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${pick.count}개` };
+    },
+
+    // ㉚ 한 꼭짓점에서 만나는 구성 요소 (면 3개, 모서리 3개로 항상 동일)
+    g5s2_cuboid_vertex_meet() {
+        const shapeName = Math.random() < 0.5 ? "직육면체" : "정육면체";
+        const askFace = Math.random() < 0.5;
+        const word = askFace ? "면" : "모서리";
+        const formula = `${shapeName}의 한 꼭짓점에서 만나는 ${word}는 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: "3개" };
+    },
+
+    // ㉛ 직육면체의 모든 모서리 길이의 합 (같은 길이의 모서리가 각각 4개)
+    g5s2_cuboid_edge_total() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const height = randInt(2, 30);
+        const total = 4 * (w + h + height);
+        const formula = `가로 ${w}cm, 세로 ${h}cm, 높이 ${height}cm인 직육면체의 모든 모서리 길이의 합`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${total}cm` };
+    },
+
+    // ㉜ 모든 모서리 길이의 합으로 한 변의 길이 찾기 (역산해 항상 자연수가 되도록 생성)
+    g5s2_cuboid_edge_reverse() {
+        const dims = { 가로: randInt(2, 30), 세로: randInt(2, 30), 높이: randInt(2, 30) };
+        const total = 4 * (dims.가로 + dims.세로 + dims.높이);
+        const keys = Object.keys(dims);
+        const targetKey = keys[randInt(0, keys.length - 1)];
+        const givenKeys = keys.filter((k) => k !== targetKey);
+        const givenText = givenKeys.map((k) => `${k} ${dims[k]}cm`).join(", ");
+        const formula = `${givenText}인 직육면체의 모든 모서리 길이의 합이 ${total}cm일 때 ${targetKey}`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${dims[targetKey]}cm` };
+    },
+
+    // ㉝ 마주 보는 면의 성질 (마주 보는 두 면은 모양과 크기가 같음)
+    g5s2_cuboid_opposite_face() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const askArea = Math.random() < 0.6;
+        let formula, answer;
+        if (askArea) {
+            formula = `한 면의 가로가 ${w}cm, 세로가 ${h}cm일 때 그 면과 마주 보는 면의 넓이`;
+            answer = formatCm2(w * h);
+        } else {
+            const askWhich = Math.random() < 0.5 ? "가로" : "세로";
+            const value = askWhich === "가로" ? w : h;
+            formula = `한 면의 가로가 ${w}cm, 세로가 ${h}cm일 때 그 면과 마주 보는 면의 ${askWhich}`;
+            answer = formatCm(value);
+        }
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 5학년 2학기 - 평균과 가능성 ===== */
+
+    // ㉞ 여러 수의 평균 (합계가 자료 수로 나누어떨어지게 생성)
+    g5s2_average_basic() {
+        const count = randInt(3, 6);
+        const values = generateUntilValid(
+            () => {
+                const arr = [];
+                for (let i = 0; i < count; i++) arr.push(randInt(1, 100));
+                return arr;
+            },
+            (arr) => {
+                const sum = arr.reduce((a, b) => a + b, 0);
+                const allSame = arr.every((v) => v === arr[0]);
+                if (sum % count !== 0) return false;
+                return !(allSame && Math.random() < 0.85); // 모두 같은 값은 자주 나오지 않게 함
+            }
+        );
+        const sum = values.reduce((a, b) => a + b, 0);
+        const average = sum / count;
+        const formula = `${values.join(", ")}의 평균`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(average) };
+    },
+
+    // ㉟ 평균과 자료 수로 합계 구하기
+    g5s2_average_to_sum() {
+        const count = randInt(3, 10);
+        const average = randInt(10, 100);
+        const sum = average * count;
+        const formula = `${count}명의 점수 평균이 ${average}점일 때 점수의 합`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${sum}점` };
+    },
+
+    // ㊱ 평균을 이용하여 빠진 값 구하기
+    g5s2_average_missing_value() {
+        const count = randInt(3, 5);
+        const result = generateUntilValid(
+            () => {
+                const known = [];
+                for (let i = 0; i < count - 1; i++) known.push(randInt(1, 100));
+                const average = randInt(10, 100);
+                const missing = average * count - known.reduce((a, b) => a + b, 0);
+                return { known, average, missing };
+            },
+            (v) => v.missing >= 1 && v.missing <= 100
+        );
+        const blankIdx = randInt(0, count - 1);
+        const displayValues = [...result.known];
+        displayValues.splice(blankIdx, 0, "?");
+        const formula = `${displayValues.join(", ")}의 평균이 ${result.average}일 때 빈칸`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(result.missing) };
+    },
+
+    // ㊲ 한 값이 변했을 때 새로운 평균 (정수 스케일 계산으로 오차 방지)
+    g5s2_average_after_change() {
+        const result = generateUntilValid(
+            () => {
+                const count = randInt(3, 10);
+                const oldAverage = randInt(10, 100);
+                const oldSum = oldAverage * count;
+                const isIncrease = Math.random() < 0.5;
+                const changeAmount = randInt(1, 20);
+                const newSum = isIncrease ? oldSum + changeAmount : oldSum - changeAmount;
+                const scaledNewAverage = (newSum * 10) / count; // 정수면 소수 한 자리까지 표현 가능
+                return { count, oldAverage, isIncrease, changeAmount, scaledNewAverage, newSum };
+            },
+            (v) => Number.isInteger(v.scaledNewAverage) && v.newSum > 0
+        );
+        const changeWord = result.isIncrease ? "높아지면" : "낮아지면";
+        const formula = `${result.count}명의 평균이 ${result.oldAverage}점일 때 한 학생의 점수가 ${result.changeAmount}점 ${changeWord} 새로운 평균`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${formatScaledDecimal(result.scaledNewAverage, 1)}점` };
+    },
+
+    // ㊳ 일이 일어날 가능성을 수로 나타내기 (0, 1/2, 1만 사용)
+    g5s2_probability_number() {
+        const type = randInt(0, 2); // 0: 반드시 일어나지 않음, 1: 반반, 2: 반드시 일어남
+        if (type === 0) {
+            const colors = ["빨간", "파란", "노란"];
+            const color = colors[randInt(0, colors.length - 1)];
+            const otherColor = colors.find((c) => c !== color);
+            const count = randInt(2, 8);
+            const formula = `${otherColor} 공 ${count}개만 든 주머니에서 ${color} 공을 꺼낼 가능성`;
+            return { formulaFront: formula, formulaBack: formula, answer: "0" };
+        }
+        if (type === 1) {
+            const n = randInt(1, 6);
+            const formula = `빨간 공 ${n}개와 파란 공 ${n}개가 든 주머니에서 빨간 공을 한 개 꺼낼 가능성`;
+            return { formulaFront: formula, formulaBack: formula, answer: makeFractionHTML(1, 2) };
+        }
+        const colors = ["빨간", "파란", "노란"];
+        const color = colors[randInt(0, colors.length - 1)];
+        const count = randInt(2, 8);
+        const formula = `${color} 공 ${count}개만 든 주머니에서 ${color} 공을 꺼낼 가능성`;
+        return { formulaFront: formula, formulaBack: formula, answer: "1" };
+    },
+
+    // ㊴ 가능성 비교하기 (같은 가능성인 경우도 생성)
+    g5s2_probability_compare() {
+        const colorA = "빨간";
+        const colorB = "파란";
+        const countA = randInt(1, 10);
+        const equalCase = Math.random() < 0.25;
+        const countB = equalCase ? countA : generateUntilValid(() => randInt(1, 10), (v) => v !== countA);
+        const formula = `${colorA} 공 ${countA}개, ${colorB} 공 ${countB}개가 든 주머니에서 ${colorA} 공과 ${colorB} 공 중 어느 공이 나올 가능성이 더 큰가?`;
+        let answer;
+        if (countA === countB) {
+            answer = "두 가능성이 같습니다";
+        } else {
+            answer = countA > countB ? `${colorA} 공` : `${colorB} 공`;
+        }
+        return { formulaFront: formula, formulaBack: formula, answer };
     }
 };
 

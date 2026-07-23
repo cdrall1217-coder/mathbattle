@@ -206,7 +206,32 @@ const problemCatalog = [
                     { id: "g5s1_unlike_fraction_mixed_add", label: "대분수 + 대분수 (분모가 다름)", semester: 1 },
                     { id: "g5s1_unlike_fraction_sub", label: "진분수 - 진분수 (분모가 다름)", semester: 1 },
                     { id: "g5s1_unlike_fraction_mixed_proper_sub", label: "대분수 - 진분수 (분모가 다름)", semester: 1 },
-                    { id: "g5s1_unlike_fraction_mixed_sub", label: "대분수 - 대분수 (분모가 다름)", semester: 1 }
+                    { id: "g5s1_unlike_fraction_mixed_sub", label: "대분수 - 대분수 (분모가 다름)", semester: 1 },
+                    // 5학년 2학기 - 수의 범위와 어림하기
+                    { id: "g5s2_range_inclusive", label: "이상·이하 범위 판단", semester: 2 },
+                    { id: "g5s2_range_exclusive", label: "초과·미만 범위 판단", semester: 2 },
+                    { id: "g5s2_range_count", label: "범위에 속하는 자연수의 개수", semester: 2 },
+                    { id: "g5s2_range_extreme", label: "조건을 만족하는 가장 작은 수·가장 큰 수", semester: 2 },
+                    { id: "g5s2_round_up", label: "올림", semester: 2 },
+                    { id: "g5s2_round_down", label: "버림", semester: 2 },
+                    { id: "g5s2_round_nearest", label: "반올림", semester: 2 },
+                    { id: "g5s2_round_reverse_range", label: "반올림한 값으로 원래 수의 범위 찾기", semester: 2 },
+                    // 5학년 2학기 - 분수의 곱셈
+                    { id: "g5s2_fraction_proper_natural_mul", label: "진분수 × 자연수", semester: 2 },
+                    { id: "g5s2_fraction_mixed_natural_mul", label: "대분수 × 자연수", semester: 2 },
+                    { id: "g5s2_fraction_natural_proper_mul", label: "자연수 × 진분수", semester: 2 },
+                    { id: "g5s2_fraction_natural_mixed_mul", label: "자연수 × 대분수", semester: 2 },
+                    { id: "g5s2_fraction_proper_proper_mul", label: "진분수 × 진분수", semester: 2 },
+                    { id: "g5s2_fraction_proper_mixed_mul", label: "진분수 × 대분수", semester: 2 },
+                    { id: "g5s2_fraction_mixed_mixed_mul", label: "대분수 × 대분수", semester: 2 },
+                    // 5학년 2학기 - 소수의 곱셈
+                    { id: "g5s2_decimal_1_mul_natural", label: "소수 한 자리 수 × 자연수", semester: 2 },
+                    { id: "g5s2_decimal_2_mul_natural", label: "소수 두 자리 수 × 자연수", semester: 2 },
+                    { id: "g5s2_natural_mul_decimal_1", label: "자연수 × 소수 한 자리 수", semester: 2 },
+                    { id: "g5s2_natural_mul_decimal_2", label: "자연수 × 소수 두 자리 수", semester: 2 },
+                    { id: "g5s2_decimal_1_mul_decimal_1", label: "소수 한 자리 수 × 소수 한 자리 수", semester: 2 },
+                    { id: "g5s2_decimal_mixed_mul", label: "자릿수가 다른 소수의 곱셈", semester: 2 },
+                    { id: "g5s2_decimal_point_shift", label: "곱의 소수점 위치", semester: 2 }
                 ]
             },
             {
@@ -229,7 +254,32 @@ const problemCatalog = [
                     { id: "g5s1_parallelogram_area", label: "평행사변형의 넓이", semester: 1 },
                     { id: "g5s1_triangle_area", label: "삼각형의 넓이", semester: 1 },
                     { id: "g5s1_trapezoid_area", label: "사다리꼴의 넓이", semester: 1 },
-                    { id: "g5s1_rhombus_area", label: "마름모의 넓이", semester: 1 }
+                    { id: "g5s1_rhombus_area", label: "마름모의 넓이", semester: 1 },
+                    // 5학년 2학기 - 합동과 대칭
+                    { id: "g5s2_congruent_vertex", label: "합동인 도형의 대응 꼭짓점", semester: 2 },
+                    { id: "g5s2_congruent_side", label: "합동인 도형의 대응변 길이", semester: 2 },
+                    { id: "g5s2_congruent_angle", label: "합동인 도형의 대응각", semester: 2 },
+                    { id: "g5s2_line_symmetry_distance", label: "선대칭도형의 대응점과 대칭축 사이 거리", semester: 2 },
+                    { id: "g5s2_point_symmetry_distance", label: "점대칭도형의 대응점과 대칭 중심 사이 거리", semester: 2 },
+                    // 5학년 2학기 - 직육면체
+                    { id: "g5s2_cuboid_name", label: "입체도형 이름 찾기", semester: 2 },
+                    { id: "g5s2_cuboid_count", label: "면·모서리·꼭짓점의 개수", semester: 2 },
+                    { id: "g5s2_cuboid_vertex_meet", label: "한 꼭짓점에서 만나는 구성 요소", semester: 2 },
+                    { id: "g5s2_cuboid_edge_total", label: "직육면체의 모든 모서리 길이의 합", semester: 2 },
+                    { id: "g5s2_cuboid_edge_reverse", label: "모든 모서리 길이의 합으로 한 변의 길이 찾기", semester: 2 },
+                    { id: "g5s2_cuboid_opposite_face", label: "마주 보는 면의 성질", semester: 2 }
+                ]
+            },
+            {
+                id: "data",
+                label: "자료와 가능성",
+                subjects: [
+                    { id: "g5s2_average_basic", label: "여러 수의 평균", semester: 2 },
+                    { id: "g5s2_average_to_sum", label: "평균과 자료 수로 합계 구하기", semester: 2 },
+                    { id: "g5s2_average_missing_value", label: "평균을 이용하여 빠진 값 구하기", semester: 2 },
+                    { id: "g5s2_average_after_change", label: "한 값이 변했을 때 새로운 평균", semester: 2 },
+                    { id: "g5s2_probability_number", label: "일이 일어날 가능성을 수로 나타내기", semester: 2 },
+                    { id: "g5s2_probability_compare", label: "가능성 비교하기", semester: 2 }
                 ]
             }
         ]
