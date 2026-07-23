@@ -1264,7 +1264,6 @@ const problemGenerators = {
         return { formulaFront: formula, formulaBack: formula, answer: String(lcm(pair.a, pair.b)) };
     },
 
-    /* ========== 5학년 1학기 - 변화와 관계: 대응 관계 ========== */
 
     /* ========== 5학년 1학기 - 약분과 통분 ========== */
     // 세로형 분수 표시(makeFractionHTML)와 대분수 공용 함수(formatMixedNumber)를 재사용한다.
@@ -1752,7 +1751,6 @@ const problemGenerators = {
         return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
     },
 
-    /* ===== 5학년 2학기 - 합동과 대칭 (그림 없이 답이 명확한 문제) ===== */
 
     /* ===== 5학년 2학기 - 소수의 곱셈 (정수 스케일 연산만 사용) ===== */
 
@@ -2025,7 +2023,6 @@ const problemGenerators = {
         return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
     },
 
-    /* ===== 6학년 1학기 - 각기둥과 각뿔 (그림·전개도 없이 텍스트로 판단) ===== */
 
     /* ===== 6학년 1학기 - 소수의 나눗셈 (몫을 먼저 정하고 피제수를 역산) ===== */
 
@@ -2587,7 +2584,6 @@ const problemGenerators = {
         return { formulaFront: formula, formulaBack: formula, answer };
     },
 
-    /* ===== 6학년 2학기 - 공간과 입체 (쌓기나무 수치만 텍스트로 제시) ===== */
 
     /* ===== 6학년 2학기 - 비례식과 비례배분 ===== */
 
