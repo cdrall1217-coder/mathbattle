@@ -2772,9 +2772,7 @@ const problemGenerators = {
         const perimeter = formatScaledDecimal(totalScaled, 2);
         const formula = `반지름이 ${radius}cm인 반원의 둘레 (지름 포함)`;
         return { formulaFront: formula, formulaBack: formula, answer: `${perimeter}cm` };
-    },
-
-    /* ===== 6학년 2학기 - 원기둥, 원뿔, 구 (그림·전개도 없이 구성 요소와 성질만 텍스트로) ===== */
+    }
 };
 
 /**
