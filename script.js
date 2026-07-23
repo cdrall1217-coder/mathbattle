@@ -20,16 +20,24 @@ const gameState = {
     cards: [
         { formulaFront: "", formulaBack: "", answer: 0, isFlipped: false, subjectId: "" },
         { formulaFront: "", formulaBack: "", answer: 0, isFlipped: false, subjectId: "" }
-    ]
+    ],
+    // 교사용 학습 범위 제한(learningScope.js) 관련 상태.
+    // learningScope: validateLearningScope()의 결과 객체 또는 null(제한 없음).
+    learningScope: null,
+    // scopeBlocked: 제한 링크가 걸려 있는데 허용 가능한 문제가 하나도 없는 경우 true.
+    // true인 동안에는 게임을 시작할 수 없다.
+    scopeBlocked: false
 };
 
 const MENU_STEPS = [
-    { id: "grade", label: "1. 학년" },
-    { id: "semester", label: "2. 학기" },
-    { id: "area", label: "3. 영역" },
-    { id: "subjects", label: "4. 종목" },
-    { id: "playstyle", label: "5. 방식" }
+    { id: "grade", shortLabel: "학년" },
+    { id: "semester", shortLabel: "학기" },
+    { id: "area", shortLabel: "영역" },
+    { id: "subjects", shortLabel: "종목" },
+    { id: "playstyle", shortLabel: "방식" }
 ];
+
+const STEP_ORDER = MENU_STEPS.map((s) => s.id);
 
 const BTN_BASE = "px-3.5 py-2 rounded-xl text-xs font-black border-2 transition-all duration-150 active:scale-95";
 const BTN_IDLE = `${BTN_BASE} bg-slate-700 border-slate-600 text-slate-100 hover:bg-slate-600`;
@@ -133,9 +141,11 @@ function updateMenuPanelVisibility() {
 }
 
 function setMenuStep(stepId) {
-    const order = MENU_STEPS.map((s) => s.id);
-    const targetIdx = order.indexOf(stepId);
+    const targetIdx = STEP_ORDER.indexOf(stepId);
     if (targetIdx < 0) return;
+
+    // 학습 범위 제한으로 잠긴 단계에는 (탭 클릭 등으로도) 진입할 수 없다.
+    if (isStepLocked(stepId)) return;
 
     if (stepId === "semester" && gameState.selectedGrade == null) return;
     if (stepId === "area" && (gameState.selectedGrade == null || gameState.selectedSemester == null)) return;
@@ -152,6 +162,214 @@ function getActivePlayMode() {
     return BattleMode;
 }
 
+/* ========== 학습 범위 제한(교사용 링크) 연동 헬퍼 ==========
+ * 필터링/검증 로직 자체는 learningScope.js 의 순수 함수만 사용하고,
+ * 여기서는 그 결과를 화면 상태(gameState)에 반영하는 역할만 한다. */
+
+function isGradeLocked() {
+    const scope = gameState.learningScope;
+    return !!(scope && scope.active && scope.isValid);
+}
+
+function isSemesterLocked() {
+    const scope = gameState.learningScope;
+    return !!(scope && scope.active && scope.isValid && scope.semester != null);
+}
+
+function isAreaLocked() {
+    const scope = gameState.learningScope;
+    if (!scope || !scope.active || !scope.isValid) return false;
+    if (scope.area) return true;
+    // 영역 자체는 지정하지 않았어도, topics 제한으로 인해 영역이 사실상 하나로만
+    // 좁혀지는 경우(예: 특정 영역의 종목 2개만 지정)에도 영역 단계를 자동 확정한다.
+    if (scope.topics && scope.topics.length && gameState.selectedSemester != null) {
+        const areaIds = new Set(
+            scope.allowedSubjects.filter((s) => s.semester === gameState.selectedSemester).map((s) => s.areaId)
+        );
+        return areaIds.size === 1;
+    }
+    return false;
+}
+
+/** 세부 종목이 정확히 1개로 좁혀진 경우(예: topics를 1개만 지정한 링크)에는 종목 선택 단계 자체를 건너뛴다. */
+function isSubjectsStepLocked() {
+    const scope = gameState.learningScope;
+    if (!scope || !scope.active || !scope.isValid) return false;
+    if (gameState.selectedGrade == null || gameState.selectedSemester == null || gameState.selectedAreaId == null) return false;
+    return getEffectiveSubjectOptions().length === 1;
+}
+
+function isStepLocked(stepId) {
+    if (stepId === "grade") return isGradeLocked();
+    if (stepId === "semester") return isSemesterLocked();
+    if (stepId === "area") return isAreaLocked();
+    if (stepId === "subjects") return isSubjectsStepLocked();
+    return false;
+}
+
+/** 현재 잠금 상태를 반영해, 학생에게 실제로 보여줄 메뉴 단계 목록(순번 포함)을 반환한다. */
+function getVisibleMenuSteps() {
+    return MENU_STEPS.filter((s) => !isStepLocked(s.id)).map((s, idx) => ({ ...s, number: idx + 1 }));
+}
+
+function stepNumber(stepId) {
+    const found = getVisibleMenuSteps().find((s) => s.id === stepId);
+    return found ? found.number : "";
+}
+
+/** stepId 이전에 있는, 잠겨있지 않은 가장 가까운 단계 id를 반환한다. 없으면 null. */
+function getPrevVisibleStep(stepId) {
+    let idx = STEP_ORDER.indexOf(stepId) - 1;
+    while (idx >= 0) {
+        if (!isStepLocked(STEP_ORDER[idx])) return STEP_ORDER[idx];
+        idx--;
+    }
+    return null;
+}
+
+/** 현재 선택된 학년·학기 기준 영역 목록을, 학습 범위 제한과 다시 교집합 처리해 반환한다. */
+function getEffectiveAreaOptions() {
+    const baseAreas = getAreasForGradeSemester(gameState.selectedGrade, gameState.selectedSemester);
+    const scope = gameState.learningScope;
+    if (!scope || !scope.active) return baseAreas; // 제한 없음: 기존과 동일하게 동작
+    if (!scope.isValid) return []; // 잘못된 링크: 전체 허용으로 폴백하지 않음
+
+    const allowedIds = new Set(
+        scope.allowedSubjects.filter((s) => s.semester === gameState.selectedSemester).map((s) => s.id)
+    );
+    return baseAreas
+        .map((area) => ({ id: area.id, label: area.label, subjects: area.subjects.filter((s) => allowedIds.has(s.id)) }))
+        .filter((area) => area.subjects.length > 0);
+}
+
+/** 현재 선택된 학년·학기·영역 기준 세부 종목 목록을, 학습 범위 제한과 다시 교집합 처리해 반환한다. */
+function getEffectiveSubjectOptions() {
+    const baseSubjects = getSubjectsForGradeAreaSemester(gameState.selectedGrade, gameState.selectedAreaId, gameState.selectedSemester);
+    const scope = gameState.learningScope;
+    if (!scope || !scope.active) return baseSubjects; // 제한 없음: 기존과 동일하게 동작
+    if (!scope.isValid) return []; // 잘못된 링크: 전체 허용으로 폴백하지 않음
+
+    const allowedIds = new Set(scope.allowedSubjects.map((s) => s.id));
+    return baseSubjects.filter((s) => allowedIds.has(s.id));
+}
+
+/**
+ * 실제 문제를 출제할 최종 풀. 화면(gameState.selectedSubjects)에 무엇이 남아있든
+ * 신뢰하지 않고, 매번 학습 범위 제한과 다시 교집합 처리한다.
+ */
+function getFinalSubjectPool() {
+    const scope = gameState.learningScope;
+    if (!scope || !scope.active) return gameState.selectedSubjects.slice(); // 제한 없음: 기존과 동일하게 동작
+    if (!scope.isValid) return []; // 잘못된 링크: 화면에 남은 값이 있어도 항상 빈 풀
+
+    const allowedIds = new Set(scope.allowedSubjects.map((s) => s.id));
+    return gameState.selectedSubjects.filter((id) => allowedIds.has(id));
+}
+
+/**
+ * 학습 범위 제한으로 고정된 학년/학기/영역 값을 자동으로 채우고, 세부 종목이
+ * 하나로 좁혀지면 자동 선택한 뒤, 다음에 보여줄 메뉴 단계를 계산한다.
+ * 학년/학기/영역 선택 함수들이 값을 바꾼 직후 공통으로 호출한다.
+ * (제한이 없는 일반 모드에서는 기존과 동일하게 동작한다.)
+ */
+function resolveLockedFieldsAndAdvance() {
+    const scope = gameState.learningScope;
+
+    if (scope && scope.active && scope.isValid) {
+        if (gameState.selectedGrade == null) gameState.selectedGrade = scope.grade;
+        if (scope.semester != null && gameState.selectedSemester == null) gameState.selectedSemester = scope.semester;
+
+        if (gameState.selectedAreaId == null && gameState.selectedSemester != null) {
+            if (scope.area) {
+                gameState.selectedAreaId = scope.area;
+            } else if (scope.topics && scope.topics.length) {
+                // 영역 자체는 지정하지 않았지만, topics 제한으로 영역이 사실상 하나로만 좁혀지면 자동 확정한다.
+                const areaIds = [...new Set(
+                    scope.allowedSubjects.filter((s) => s.semester === gameState.selectedSemester).map((s) => s.areaId)
+                )];
+                if (areaIds.length === 1) gameState.selectedAreaId = areaIds[0];
+            }
+        }
+
+        if (
+            gameState.selectedGrade != null &&
+            gameState.selectedSemester != null &&
+            gameState.selectedAreaId != null &&
+            gameState.selectedSubjects.length === 0
+        ) {
+            const options = getEffectiveSubjectOptions();
+            if (options.length === 1) {
+                gameState.selectedSubjects = [options[0].id];
+            }
+        }
+    }
+
+    if (gameState.selectedGrade == null) gameState.menuStep = "grade";
+    else if (gameState.selectedSemester == null) gameState.menuStep = "semester";
+    else if (gameState.selectedAreaId == null) gameState.menuStep = "area";
+    else if (gameState.selectedSubjects.length === 0) gameState.menuStep = "subjects";
+    else gameState.menuStep = "playstyle";
+}
+
+/** 페이지 로드시 URL을 분석해 학습 범위 제한을 계산하고 gameState에 반영한다. */
+function initLearningScopeForSession() {
+    const rawScope = parseLearningScope();
+    const validated = validateLearningScope(rawScope, problemCatalog);
+    gameState.learningScope = validated;
+    gameState.scopeBlocked = validated.active && !validated.isValid;
+
+    if (!gameState.scopeBlocked && validated.active) {
+        resolveLockedFieldsAndAdvance();
+    }
+
+    renderScopeBanners();
+}
+
+/** 화면 상단(및 시작 화면)의 학습 범위 안내/오류 배너를 갱신한다. */
+function renderScopeBanners() {
+    const scope = gameState.learningScope;
+    const bannerBar = document.getElementById('scope-banner-bar');
+    const bannerText = document.getElementById('scope-banner-text');
+    const errorBar = document.getElementById('scope-error-bar');
+    const errorText = document.getElementById('scope-error-text');
+    const setupNote = document.getElementById('setup-scope-note');
+    const startBtn = document.getElementById('start-game-btn');
+
+    if (!scope || !scope.active) {
+        if (bannerBar) bannerBar.classList.add('hidden');
+        if (errorBar) errorBar.classList.add('hidden');
+        if (setupNote) setupNote.classList.add('hidden');
+        if (startBtn) startBtn.disabled = false;
+        return;
+    }
+
+    if (!scope.isValid) {
+        if (bannerBar) bannerBar.classList.add('hidden');
+        if (errorBar) {
+            errorBar.classList.remove('hidden');
+            errorText.textContent = LEARNING_SCOPE_ERROR_MESSAGE;
+        }
+        if (setupNote) {
+            setupNote.classList.remove('hidden', 'text-indigo-700', 'bg-indigo-50', 'border-indigo-200');
+            setupNote.classList.add('text-rose-700', 'bg-rose-50', 'border-rose-200');
+            setupNote.textContent = LEARNING_SCOPE_ERROR_MESSAGE;
+        }
+        if (startBtn) startBtn.disabled = true;
+        return;
+    }
+
+    const label = getLearningScopeLabel(scope);
+    if (bannerBar) bannerBar.classList.remove('hidden');
+    if (bannerText) bannerText.textContent = `${label} 학습 링크입니다`;
+    if (errorBar) errorBar.classList.add('hidden');
+    if (setupNote) {
+        setupNote.classList.remove('hidden', 'text-rose-700', 'bg-rose-50', 'border-rose-200');
+        setupNote.classList.add('text-indigo-700', 'bg-indigo-50', 'border-indigo-200');
+        setupNote.textContent = `🔒 ${label} 학습 링크입니다`;
+    }
+    if (startBtn) startBtn.disabled = false;
+}
+
 function selectGrade(grade) {
     gameState.selectedGrade = Number(grade);
     gameState.selectedSemester = null;
@@ -160,7 +378,7 @@ function selectGrade(grade) {
     gameState.playStyle = null;
     gameState.bossDifficulty = null;
     gameState.selectionReady = false;
-    gameState.menuStep = "semester";
+    resolveLockedFieldsAndAdvance();
     playBeep('flip');
     renderSelectionMenu();
     updateSelectionSummary();
@@ -175,7 +393,7 @@ function selectSemester(semester) {
     gameState.playStyle = null;
     gameState.bossDifficulty = null;
     gameState.selectionReady = false;
-    gameState.menuStep = "area";
+    resolveLockedFieldsAndAdvance();
     playBeep('flip');
     renderSelectionMenu();
     updateSelectionSummary();
@@ -189,7 +407,7 @@ function selectArea(areaId) {
     gameState.playStyle = null;
     gameState.bossDifficulty = null;
     gameState.selectionReady = false;
-    gameState.menuStep = "subjects";
+    resolveLockedFieldsAndAdvance();
     playBeep('flip');
     renderSelectionMenu();
     updateSelectionSummary();
@@ -287,10 +505,11 @@ function hideMenuHint() {
 function renderStepTabs() {
     const tabsEl = document.getElementById('menu-step-tabs');
     tabsEl.innerHTML = "";
-    const order = MENU_STEPS.map((s) => s.id);
+    const visibleSteps = getVisibleMenuSteps();
+    const order = visibleSteps.map((s) => s.id);
     const currentIdx = order.indexOf(gameState.menuStep);
 
-    MENU_STEPS.forEach((step, idx) => {
+    visibleSteps.forEach((step, idx) => {
         const btn = document.createElement('button');
         btn.type = "button";
         const reachable =
@@ -311,7 +530,7 @@ function renderStepTabs() {
             btn.className = "px-3 py-1.5 rounded-full text-xs font-black bg-emerald-700 text-emerald-100 border border-emerald-500 hover:bg-emerald-600";
         }
 
-        btn.textContent = step.label;
+        btn.textContent = `${step.number}. ${step.shortLabel}`;
         if (reachable) {
             btn.onclick = () => setMenuStep(step.id);
         }
@@ -319,7 +538,31 @@ function renderStepTabs() {
     });
 }
 
+/** 학습 범위 제한 링크의 설정이 잘못되어 허용 가능한 문제가 하나도 없을 때 표시하는 메뉴 상태. */
+function renderScopeBlockedMenu() {
+    const tabsEl = document.getElementById('menu-step-tabs');
+    const titleEl = document.getElementById('menu-step-title');
+    const optionsEl = document.getElementById('menu-options');
+    const actionsEl = document.getElementById('menu-actions');
+
+    tabsEl.innerHTML = "";
+    titleEl.textContent = "⚠️ 학습 링크 오류";
+    optionsEl.innerHTML = "";
+    actionsEl.innerHTML = "";
+    hideMenuHint();
+
+    const notice = document.createElement('div');
+    notice.className = "w-full text-center text-rose-300 font-jua text-base py-4 whitespace-pre-line";
+    notice.textContent = LEARNING_SCOPE_ERROR_MESSAGE;
+    optionsEl.appendChild(notice);
+}
+
 function renderSelectionMenu() {
+    if (gameState.scopeBlocked) {
+        renderScopeBlockedMenu();
+        return;
+    }
+
     renderStepTabs();
     hideMenuHint();
 
@@ -330,7 +573,7 @@ function renderSelectionMenu() {
     actionsEl.innerHTML = "";
 
     if (gameState.menuStep === "grade") {
-        titleEl.textContent = "1. 학년을 선택하세요";
+        titleEl.textContent = `${stepNumber('grade')}. 학년을 선택하세요`;
         SELECTABLE_GRADES.forEach((grade) => {
             const gradeEntry = getGradeEntry(grade);
             const btn = document.createElement('button');
@@ -344,7 +587,7 @@ function renderSelectionMenu() {
     }
 
     if (gameState.menuStep === "semester") {
-        titleEl.textContent = "2. 학기를 선택하세요";
+        titleEl.textContent = `${stepNumber('semester')}. 학기를 선택하세요`;
         semesterOptions.forEach((sem) => {
             const btn = document.createElement('button');
             btn.type = "button";
@@ -354,31 +597,35 @@ function renderSelectionMenu() {
             optionsEl.appendChild(btn);
         });
 
-        const backBtn = document.createElement('button');
-        backBtn.type = "button";
-        backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
-        backBtn.textContent = "← 학년으로";
-        backBtn.onclick = () => setMenuStep("grade");
-        actionsEl.appendChild(backBtn);
+        const prevStep = getPrevVisibleStep("semester");
+        if (prevStep) {
+            const backBtn = document.createElement('button');
+            backBtn.type = "button";
+            backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
+            backBtn.textContent = "← 학년으로";
+            backBtn.onclick = () => setMenuStep(prevStep);
+            actionsEl.appendChild(backBtn);
+        }
         return;
     }
 
     if (gameState.menuStep === "area") {
-        titleEl.textContent = "3. 영역을 선택하세요";
-        const areas = getAreasForGradeSemester(gameState.selectedGrade, gameState.selectedSemester);
+        titleEl.textContent = `${stepNumber('area')}. 영역을 선택하세요`;
+        const areas = getEffectiveAreaOptions();
 
+        const prevStep = getPrevVisibleStep("area");
         const backBtn = document.createElement('button');
         backBtn.type = "button";
         backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
         backBtn.textContent = "← 학기로";
-        backBtn.onclick = () => setMenuStep("semester");
+        backBtn.onclick = () => { if (prevStep) setMenuStep(prevStep); };
 
         if (areas.length === 0) {
             const notice = document.createElement('div');
             notice.className = "w-full text-center text-amber-200 font-jua text-lg py-4";
             notice.textContent = "🚧 문제 준비 중이에요! 다른 학년/학기를 선택해 주세요.";
             optionsEl.appendChild(notice);
-            actionsEl.appendChild(backBtn);
+            if (prevStep) actionsEl.appendChild(backBtn);
             return;
         }
 
@@ -391,13 +638,13 @@ function renderSelectionMenu() {
             optionsEl.appendChild(btn);
         });
 
-        actionsEl.appendChild(backBtn);
+        if (prevStep) actionsEl.appendChild(backBtn);
         return;
     }
 
     if (gameState.menuStep === "subjects") {
-        titleEl.textContent = "4. 세부 종목을 선택하세요 (여러 개 가능)";
-        const subjects = getSubjectsForGradeAreaSemester(gameState.selectedGrade, gameState.selectedAreaId, gameState.selectedSemester);
+        titleEl.textContent = `${stepNumber('subjects')}. 세부 종목을 선택하세요 (여러 개 가능)`;
+        const subjects = getEffectiveSubjectOptions();
         if (!subjects.length) return;
 
         subjects.forEach((subject) => {
@@ -410,12 +657,15 @@ function renderSelectionMenu() {
             optionsEl.appendChild(btn);
         });
 
-        const backBtn = document.createElement('button');
-        backBtn.type = "button";
-        backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
-        backBtn.textContent = "← 영역으로";
-        backBtn.onclick = () => setMenuStep("area");
-        actionsEl.appendChild(backBtn);
+        const prevStep = getPrevVisibleStep("subjects");
+        if (prevStep) {
+            const backBtn = document.createElement('button');
+            backBtn.type = "button";
+            backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
+            backBtn.textContent = "← 영역으로";
+            backBtn.onclick = () => setMenuStep(prevStep);
+            actionsEl.appendChild(backBtn);
+        }
 
         const nextBtn = document.createElement('button');
         nextBtn.type = "button";
@@ -428,7 +678,7 @@ function renderSelectionMenu() {
 
     if (gameState.menuStep === "playstyle") {
         if (gameState.playStyle === "coop" && !gameState.selectionReady) {
-            titleEl.textContent = "5. 보스전 난이도를 선택하세요";
+            titleEl.textContent = `${stepNumber('playstyle')}. 보스전 난이도를 선택하세요`;
             Object.values(BOSS_DIFFICULTIES).forEach((diff) => {
                 const btn = document.createElement('button');
                 btn.type = "button";
@@ -452,7 +702,7 @@ function renderSelectionMenu() {
             return;
         }
 
-        titleEl.textContent = "5. 게임 방식을 선택하세요";
+        titleEl.textContent = `${stepNumber('playstyle')}. 게임 방식을 선택하세요`;
         playStyleOptions.forEach((opt) => {
             const btn = document.createElement('button');
             btn.type = "button";
@@ -462,12 +712,15 @@ function renderSelectionMenu() {
             optionsEl.appendChild(btn);
         });
 
-        const backBtn = document.createElement('button');
-        backBtn.type = "button";
-        backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
-        backBtn.textContent = "← 종목으로";
-        backBtn.onclick = () => setMenuStep("subjects");
-        actionsEl.appendChild(backBtn);
+        const prevStep = getPrevVisibleStep("playstyle");
+        if (prevStep) {
+            const backBtn = document.createElement('button');
+            backBtn.type = "button";
+            backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
+            backBtn.textContent = prevStep === "subjects" ? "← 종목으로" : "← 영역으로";
+            backBtn.onclick = () => setMenuStep(prevStep);
+            actionsEl.appendChild(backBtn);
+        }
     }
 }
 
@@ -506,6 +759,8 @@ function updateSelectionSummary() {
 }
 
 function startGame() {
+    if (gameState.scopeBlocked) return; // 방어적 처리: 버튼이 비활성화되어 있어도 실행되지 않게 함
+
     const p1Val = document.getElementById('p1-input').value.trim();
     const p2Val = document.getElementById('p2-input').value.trim();
     const warningEl = document.getElementById('warning-msg');
@@ -529,7 +784,7 @@ function startGame() {
     p1Labels.forEach(el => el.textContent = p1Val);
     p2Labels.forEach(el => el.textContent = p2Val);
 
-    if (gameState.selectionReady && gameState.selectedSubjects.length) {
+    if (gameState.selectionReady && getFinalSubjectPool().length) {
         resetCard(0);
         resetCard(1);
     }
@@ -541,7 +796,11 @@ function startGame() {
 }
 
 function resetCard(cardIdx) {
-    if (!gameState.selectedSubjects.length) {
+    // 화면에 선택되어 있는 값(gameState.selectedSubjects)을 그대로 신뢰하지 않고,
+    // 매번 학습 범위 제한(URL scope)과 다시 교집합 처리한 최종 풀로 문제를 생성한다.
+    const pool = getFinalSubjectPool();
+
+    if (!pool.length) {
         document.getElementById(`card-tag-front-${cardIdx}`).textContent = "종목 미선택";
         document.getElementById(`card-formula-${cardIdx}`).innerHTML = "-- + --";
         document.getElementById(`card-formula-back-${cardIdx}`).innerHTML = "-- + --";
@@ -551,7 +810,7 @@ function resetCard(cardIdx) {
         return;
     }
 
-    const problem = generateMathProblem();
+    const problem = generateMathProblem(null, pool);
     gameState.cards[cardIdx] = {
         formulaFront: problem.formulaFront,
         formulaBack: problem.formulaBack,
@@ -573,7 +832,9 @@ function resetCard(cardIdx) {
 }
 
 function flipCard(cardIdx) {
-    if (!gameState.selectionReady || !gameState.selectedSubjects.length) {
+    if (gameState.scopeBlocked) return; // 방어적 처리: 링크 오류 상태에서는 카드 진행 불가
+
+    if (!gameState.selectionReady || !getFinalSubjectPool().length) {
         gameState.menuOpen = true;
         updateMenuPanelVisibility();
         showMenuHint("학년 → 학기 → 영역 → 종목 → 게임 방식을 먼저 선택해 주세요!");
@@ -674,6 +935,7 @@ function resetGame() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initLearningScopeForSession();
     BattleMode.init(gameState);
     BattleMode.updateUI(gameState);
     renderSelectionMenu();
