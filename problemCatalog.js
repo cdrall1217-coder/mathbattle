@@ -141,18 +141,7 @@ const problemCatalog = [
                 subjects: [
                     { id: "g4s1_angle_add", label: "각도의 합", semester: 1 },
                     { id: "g4s1_angle_sub", label: "각도의 차", semester: 1 },
-                    { id: "g4s1_angle_complement", label: "직각·평각을 만드는 각", semester: 1 },
-                    // 4학년 2학기 - 삼각형
-                    { id: "g4s2_triangle_side_type", label: "삼각형 변의 길이로 분류하기", semester: 2 },
-                    { id: "g4s2_triangle_angle_type", label: "삼각형 각의 크기로 분류하기", semester: 2 },
-                    { id: "g4s2_triangle_missing_angle", label: "삼각형의 나머지 한 각", semester: 2 },
-                    // 4학년 2학기 - 사각형
-                    { id: "g4s2_quadrilateral_name", label: "사각형 이름 찾기", semester: 2 },
-                    { id: "g4s2_quadrilateral_property", label: "사각형의 성질 판단", semester: 2 },
-                    // 4학년 2학기 - 다각형
-                    { id: "g4s2_polygon_name", label: "다각형의 이름", semester: 2 },
-                    { id: "g4s2_polygon_count", label: "다각형의 변과 꼭짓점 수", semester: 2 },
-                    { id: "g4s2_regular_polygon_property", label: "정다각형의 성질", semester: 2 }
+                    { id: "g4s2_triangle_missing_angle", label: "삼각형의 나머지 한 각", semester: 2 }
                 ]
             },
             {
@@ -235,15 +224,6 @@ const problemCatalog = [
                 ]
             },
             {
-                id: "pattern",
-                label: "변화와 관계",
-                subjects: [
-                    { id: "g5s1_correspondence_forward", label: "대응 관계의 값 구하기", semester: 1 },
-                    { id: "g5s1_correspondence_backward", label: "대응 관계에서 처음 값 구하기", semester: 1 },
-                    { id: "g5s1_correspondence_table", label: "대응표의 빈칸", semester: 1 }
-                ]
-            },
-            {
                 id: "shape_measure",
                 label: "도형과 측정",
                 subjects: [
@@ -255,19 +235,9 @@ const problemCatalog = [
                     { id: "g5s1_triangle_area", label: "삼각형의 넓이", semester: 1 },
                     { id: "g5s1_trapezoid_area", label: "사다리꼴의 넓이", semester: 1 },
                     { id: "g5s1_rhombus_area", label: "마름모의 넓이", semester: 1 },
-                    // 5학년 2학기 - 합동과 대칭
-                    { id: "g5s2_congruent_vertex", label: "합동인 도형의 대응 꼭짓점", semester: 2 },
-                    { id: "g5s2_congruent_side", label: "합동인 도형의 대응변 길이", semester: 2 },
-                    { id: "g5s2_congruent_angle", label: "합동인 도형의 대응각", semester: 2 },
-                    { id: "g5s2_line_symmetry_distance", label: "선대칭도형의 대응점과 대칭축 사이 거리", semester: 2 },
-                    { id: "g5s2_point_symmetry_distance", label: "점대칭도형의 대응점과 대칭 중심 사이 거리", semester: 2 },
-                    // 5학년 2학기 - 직육면체
-                    { id: "g5s2_cuboid_name", label: "입체도형 이름 찾기", semester: 2 },
-                    { id: "g5s2_cuboid_count", label: "면·모서리·꼭짓점의 개수", semester: 2 },
-                    { id: "g5s2_cuboid_vertex_meet", label: "한 꼭짓점에서 만나는 구성 요소", semester: 2 },
+                    // 5학년 2학기 - 직육면체 (길이 계산만)
                     { id: "g5s2_cuboid_edge_total", label: "직육면체의 모든 모서리 길이의 합", semester: 2 },
-                    { id: "g5s2_cuboid_edge_reverse", label: "모든 모서리 길이의 합으로 한 변의 길이 찾기", semester: 2 },
-                    { id: "g5s2_cuboid_opposite_face", label: "마주 보는 면의 성질", semester: 2 }
+                    { id: "g5s2_cuboid_edge_reverse", label: "모든 모서리 길이의 합으로 한 변의 길이 찾기", semester: 2 }
                 ]
             },
             {
@@ -367,13 +337,6 @@ const problemCatalog = [
                 id: "shape_measure",
                 label: "도형과 측정",
                 subjects: [
-                    // 6학년 1학기 - 각기둥과 각뿔
-                    { id: "g6s1_prism_name", label: "밑면을 보고 각기둥 이름 찾기", semester: 1 },
-                    { id: "g6s1_prism_component_count", label: "각기둥의 면·모서리·꼭짓점 수", semester: 1 },
-                    { id: "g6s1_prism_lateral_face_count", label: "각기둥의 옆면 수", semester: 1 },
-                    { id: "g6s1_pyramid_name", label: "밑면을 보고 각뿔 이름 찾기", semester: 1 },
-                    { id: "g6s1_pyramid_component_count", label: "각뿔의 면·모서리·꼭짓점 수", semester: 1 },
-                    { id: "g6s1_solid_base_polygon_from_count", label: "각기둥·각뿔의 구성 요소 역산", semester: 1 },
                     // 6학년 1학기 - 직육면체의 겉넓이와 부피
                     { id: "g6s1_cuboid_surface_area", label: "직육면체의 겉넓이", semester: 1 },
                     { id: "g6s1_cube_surface_area", label: "정육면체의 겉넓이", semester: 1 },
@@ -382,10 +345,6 @@ const problemCatalog = [
                     { id: "g6s1_cube_volume", label: "정육면체의 부피", semester: 1 },
                     { id: "g6s1_cuboid_missing_dimension_volume", label: "부피로 직육면체의 한 변 구하기", semester: 1 },
                     { id: "g6s1_cuboid_volume_compare", label: "두 직육면체의 부피 비교", semester: 1 },
-                    // 6학년 2학기 - 공간과 입체
-                    { id: "g6s2_cube_layers_total", label: "층별 쌓기나무 수의 합", semester: 2 },
-                    { id: "g6s2_cube_column_heights_total", label: "위에서 본 각 칸의 높이로 전체 개수 구하기", semester: 2 },
-                    { id: "g6s2_cube_missing_column_height", label: "전체 개수로 빠진 칸의 높이 구하기", semester: 2 },
                     // 6학년 2학기 - 원의 둘레와 넓이
                     { id: "g6s2_circle_circumference_diameter", label: "지름으로 원주 구하기", semester: 2 },
                     { id: "g6s2_circle_circumference_radius", label: "반지름으로 원주 구하기", semester: 2 },
@@ -394,14 +353,7 @@ const problemCatalog = [
                     { id: "g6s2_circle_area_radius", label: "반지름으로 원의 넓이 구하기", semester: 2 },
                     { id: "g6s2_circle_area_diameter", label: "지름으로 원의 넓이 구하기", semester: 2 },
                     { id: "g6s2_circle_radius_from_area", label: "원의 넓이로 반지름 구하기", semester: 2 },
-                    { id: "g6s2_semicircle_perimeter", label: "반원의 둘레", semester: 2 },
-                    // 6학년 2학기 - 원기둥, 원뿔, 구
-                    { id: "g6s2_round_solid_name", label: "성질을 보고 입체도형 이름 찾기", semester: 2 },
-                    { id: "g6s2_cylinder_component_count", label: "원기둥의 구성 요소 수", semester: 2 },
-                    { id: "g6s2_cone_component_count", label: "원뿔의 구성 요소 수", semester: 2 },
-                    { id: "g6s2_sphere_component_count", label: "구의 구성 요소 수", semester: 2 },
-                    { id: "g6s2_cylinder_base_property", label: "원기둥의 두 밑면의 성질", semester: 2 },
-                    { id: "g6s2_round_solid_property_check", label: "입체도형의 성질 판단", semester: 2 }
+                    { id: "g6s2_semicircle_perimeter", label: "반원의 둘레", semester: 2 }
                 ]
             }
         ]

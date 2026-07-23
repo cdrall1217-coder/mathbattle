@@ -166,47 +166,6 @@ function compareUnlikeFractions(w1, n1, d1, w2, n2, d2) {
 function formatCm(value) { return `${value}cm`; }
 function formatCm2(value) { return `${value}cm\u00B2`; }
 
-/* ===== 사각형/다각형 참조 데이터 (4학년 2학기) ===== */
-
-// 성질을 보고 이름을 찾는 문제용 - 포함 관계 때문에 답이 모호해지지 않도록
-// "가장 구체적인 이름"이 명확히 정해지는 조건 문장만 사용한다.
-const QUADRILATERAL_NAME_FACTS = [
-    { desc: "한 쌍의 마주 보는 변이 서로 평행한 사각형", name: "사다리꼴" },
-    { desc: "두 쌍의 마주 보는 변이 서로 평행한 사각형", name: "평행사변형" },
-    { desc: "두 쌍의 마주 보는 변이 서로 평행하고 네 각이 모두 직각인 사각형", name: "직사각형" },
-    { desc: "두 쌍의 마주 보는 변이 서로 평행하고 네 변의 길이가 모두 같은 사각형", name: "마름모" },
-    { desc: "네 변의 길이가 모두 같고 네 각이 모두 직각인 사각형", name: "정사각형" }
-];
-
-// 사각형 이름을 주고 성질(평행한 변의 쌍/같은 길이의 변/직각의 개수)을 묻는 문제용.
-// 도형별로 "답이 한 가지로 명확한" 질문만 등록한다.
-const QUADRILATERAL_PROPERTY_QUESTIONS = {
-    "사다리꼴": [
-        { q: "평행한 변은 몇 쌍인가?", a: "1쌍" }
-    ],
-    "평행사변형": [
-        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
-        { q: "같은 길이의 변은 몇 쌍인가?", a: "2쌍" }
-    ],
-    "직사각형": [
-        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
-        { q: "같은 길이의 변은 몇 쌍인가?", a: "2쌍" },
-        { q: "직각은 모두 몇 개인가?", a: "4개" }
-    ],
-    "마름모": [
-        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
-        { q: "같은 길이의 변은 몇 개인가?", a: "4개" }
-    ],
-    "정사각형": [
-        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
-        { q: "같은 길이의 변은 몇 개인가?", a: "4개" },
-        { q: "직각은 모두 몇 개인가?", a: "4개" }
-    ]
-};
-
-// 다각형 이름 (인덱스 0 = 변 3개 삼각형)
-const POLYGON_NAMES = ["삼각형", "사각형", "오각형", "육각형", "칠각형", "팔각형", "구각형", "십각형"];
-
 /* ===== 수의 범위 공용 함수 (5학년 2학기) ===== */
 
 /** value가 [lower, upper] 구간(경곗값 포함 여부를 각각 지정)에 속하는지 판별한다. */
@@ -342,43 +301,6 @@ const PI_SCALED = 314; // 3.14 = 314/100
 function calculateCircleValue(type, value) {
     const scaled = type === "circumference" ? value * PI_SCALED : value * value * PI_SCALED;
     return formatScaledDecimal(scaled, 2);
-}
-
-/* ===== 각기둥·각뿔 구성 요소 공용 함수 (6학년 1학기) ===== */
-
-/** 밑면이 n각형인 각기둥의 면·모서리·꼭짓점·옆면 개수를 구한다. */
-function prismComponentCounts(n) {
-    return { faces: n + 2, edges: 3 * n, vertices: 2 * n, lateralFaces: n };
-}
-
-/** 밑면이 n각형인 각뿔의 면·모서리·꼭짓점·옆면 개수를 구한다. */
-function pyramidComponentCounts(n) {
-    return { faces: n + 1, edges: 2 * n, vertices: n + 1, lateralFaces: n };
-}
-
-/** n(3~8)에 해당하는 "삼/사/오/육/칠/팔" 접두어 (각기둥·각뿔·각형 이름 조합용) */
-const POLYGON_PREFIX_BY_N = { 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔" };
-
-/* ===== 원기둥·원뿔·구 성질 데이터 공용 관리 (6학년 2학기) ===== */
-
-const ROUND_SOLID_FACTS = {
-    "원기둥": { flatFaces: 2, curvedFaces: 1, edges: 2, vertices: 0 },
-    "원뿔": { flatFaces: 1, curvedFaces: 1, edges: 1, vertices: 1 },
-    "구": { flatFaces: 0, curvedFaces: 1, edges: 0, vertices: 0 }
-};
-
-/** 지정한 원기둥·원뿔·구의 구성 요소(평평한 면/굽은 면/모서리/꼭짓점) 중 하나를 무작위로 묻는 문제를 만든다. */
-function roundSolidComponentQuestion(solidName) {
-    const facts = ROUND_SOLID_FACTS[solidName];
-    const parts = [
-        { word: "평평한 면", value: facts.flatFaces },
-        { word: "굽은 면", value: facts.curvedFaces },
-        { word: "모서리", value: facts.edges },
-        { word: "꼭짓점", value: facts.vertices }
-    ];
-    const pick = parts[randInt(0, parts.length - 1)];
-    const formula = `${solidName}의 ${pick.word}은 몇 개인가?`;
-    return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
 }
 
 /* ===== cm³ 표시 헬퍼 (6학년 1학기) ===== */
@@ -925,18 +847,6 @@ const problemGenerators = {
         };
     },
 
-    // ⑩ 직각(90°)·평각(180°)을 만드는 각
-    g4s1_angle_complement() {
-        const target = Math.random() < 0.5 ? 90 : 180;
-        const given = Math.floor(Math.random() * (target - 1)) + 1; // 1 ~ target-1
-        const answer = target - given;
-        return {
-            formulaFront: `${given}°와 합하여 ${target}°가 되는 각`,
-            formulaBack: `${given}°와 합하여 ${target}°가 되는 각`,
-            answer: `${answer}°`
-        };
-    },
-
     // ⑪ 일정하게 커지는 수의 규칙 (증가량 2~100)
     g4s1_seq_up() {
         const step = Math.floor(Math.random() * 99) + 2; // 2~100
@@ -1163,76 +1073,6 @@ const problemGenerators = {
 
     /* ========== 4학년 2학기 - 도형과 측정: 삼각형 ========== */
 
-    // ⑭ 변의 길이에 따른 삼각형 분류 (정삼각형/이등변삼각형/세 변이 모두 다른 삼각형)
-    g4s2_triangle_side_type() {
-        const typeRoll = randInt(0, 2);
-        let a, b, c, answer;
-
-        if (typeRoll === 0) {
-            a = b = c = randInt(3, 12);
-            answer = "정삼각형";
-        } else if (typeRoll === 1) {
-            const pair = generateUntilValid(
-                () => ({ side: randInt(2, 12), base: randInt(2, 12) }),
-                (v) => v.side !== v.base && isValidTriangleSides(v.side, v.side, v.base)
-            );
-            a = pair.side; b = pair.side; c = pair.base;
-            answer = "이등변삼각형";
-        } else {
-            const triple = generateUntilValid(
-                () => ({ a: randInt(3, 12), b: randInt(3, 12), c: randInt(3, 12) }),
-                (v) => v.a !== v.b && v.b !== v.c && v.a !== v.c && isValidTriangleSides(v.a, v.b, v.c)
-            );
-            a = triple.a; b = triple.b; c = triple.c;
-            answer = "세 변의 길이가 모두 다른 삼각형";
-        }
-
-        const formula = `세 변의 길이가 ${a}cm, ${b}cm, ${c}cm인 삼각형`;
-        return { formulaFront: formula, formulaBack: formula, answer };
-    },
-
-    // ⑮ 각의 크기에 따른 삼각형 분류 (예각/직각/둔각삼각형, 세 각의 합은 항상 180°)
-    g4s2_triangle_angle_type() {
-        const typeRoll = randInt(0, 2);
-        let a, b, c, answer;
-
-        if (typeRoll === 0) {
-            // 직각삼각형: 한 각 90°, 나머지 두 각(각 1~89°)의 합 90°
-            a = 90;
-            b = randInt(1, 89);
-            c = 90 - b;
-            answer = "직각삼각형";
-        } else if (typeRoll === 1) {
-            // 둔각삼각형: 한 각 91~178°, 나머지 두 각은 90° 미만
-            a = randInt(91, 178);
-            const remain = 180 - a;
-            b = randInt(1, remain - 1);
-            c = remain - b;
-            answer = "둔각삼각형";
-        } else {
-            // 예각삼각형: 세 각 모두 90° 미만
-            const triple = generateUntilValid(
-                () => {
-                    const x = randInt(20, 89);
-                    const y = randInt(20, 89);
-                    return { x, y, z: 180 - x - y };
-                },
-                (v) => v.z > 0 && v.z < 90
-            );
-            a = triple.x; b = triple.y; c = triple.z;
-            answer = "예각삼각형";
-        }
-
-        const angles = [a, b, c];
-        for (let i = angles.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [angles[i], angles[j]] = [angles[j], angles[i]];
-        }
-
-        const formula = `세 각이 ${angles[0]}°, ${angles[1]}°, ${angles[2]}°인 삼각형`;
-        return { formulaFront: formula, formulaBack: formula, answer };
-    },
-
     // ⑯ 삼각형의 나머지 한 각 (세 각의 합 180°, 정답은 1° 이상)
     g4s2_triangle_missing_angle() {
         const pair = generateUntilValid(
@@ -1249,52 +1089,7 @@ const problemGenerators = {
 
     /* ========== 4학년 2학기 - 도형과 측정: 사각형 ========== */
 
-    // ⑰ 성질을 보고 사각형 이름 찾기 (포함 관계상 답이 모호하지 않도록 조건을 고정 문구로 제공)
-    g4s2_quadrilateral_name() {
-        const pick = QUADRILATERAL_NAME_FACTS[randInt(0, QUADRILATERAL_NAME_FACTS.length - 1)];
-        return { formulaFront: pick.desc, formulaBack: pick.desc, answer: pick.name };
-    },
-
-    // ⑱ 사각형의 성질 판단 (평행한 변의 쌍 / 같은 길이의 변 / 직각의 개수 중 답이 명확한 것만 질문)
-    g4s2_quadrilateral_property() {
-        const shapes = Object.keys(QUADRILATERAL_PROPERTY_QUESTIONS);
-        const shape = shapes[randInt(0, shapes.length - 1)];
-        const options = QUADRILATERAL_PROPERTY_QUESTIONS[shape];
-        const pick = options[randInt(0, options.length - 1)];
-        const formula = `${shape}의 ${pick.q}`;
-        return { formulaFront: formula, formulaBack: formula, answer: pick.a };
-    },
-
     /* ========== 4학년 2학기 - 도형과 측정: 다각형 ========== */
-
-    // ⑲ 다각형의 이름 (변의 수 -> 이름, 삼각형~십각형)
-    g4s2_polygon_name() {
-        const sides = randInt(3, 10);
-        const name = POLYGON_NAMES[sides - 3];
-        const formula = `변이 ${sides}개인 다각형`;
-        return { formulaFront: formula, formulaBack: formula, answer: name };
-    },
-
-    // ⑳ 다각형의 변과 꼭짓점 수 (단순다각형은 변의 수 = 꼭짓점의 수)
-    g4s2_polygon_count() {
-        const sides = randInt(3, 10);
-        const name = POLYGON_NAMES[sides - 3];
-        const askVertex = Math.random() < 0.5;
-        const questionWord = askVertex ? "꼭짓점" : "변";
-        const formula = `${name}의 ${questionWord}은 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${sides}개` };
-    },
-
-    // ㉑ 정다각형의 성질 (변의 길이와 각의 크기가 모두 같다는 조건만 출제)
-    g4s2_regular_polygon_property() {
-        const variants = [
-            "모든 변의 길이와 모든 각의 크기가 각각 같은 다각형",
-            "모든 변의 길이가 서로 같고, 모든 각의 크기도 서로 같은 다각형",
-            "변의 길이가 모두 같고 각의 크기도 모두 같은 다각형"
-        ];
-        const formula = variants[randInt(0, variants.length - 1)];
-        return { formulaFront: formula, formulaBack: formula, answer: "정다각형" };
-    },
 
     /* ========== 5학년 1학기 - 자연수의 혼합 계산 ========== */
     // eval을 사용하지 않고, 계산 순서(왼쪽부터/괄호 우선/곱셈 우선)를 구조적으로 직접 계산한다.
@@ -1470,74 +1265,6 @@ const problemGenerators = {
     },
 
     /* ========== 5학년 1학기 - 변화와 관계: 대응 관계 ========== */
-
-    // ⑫ 대응 관계의 값 구하기 (□ → △)
-    g5s1_correspondence_forward() {
-        const type = randInt(0, 2);
-        const boxVal = randInt(2, 15);
-        let a, b, expr, triangleVal;
-        if (type === 0) {
-            a = randInt(2, 9);
-            triangleVal = boxVal * a;
-            expr = `△ = □ × ${a}`;
-        } else if (type === 1) {
-            a = randInt(2, 30);
-            triangleVal = boxVal + a;
-            expr = `△ = □ + ${a}`;
-        } else {
-            a = randInt(2, 9);
-            b = randInt(1, 20);
-            triangleVal = boxVal * a + b;
-            expr = `△ = □ × ${a} + ${b}`;
-        }
-        const formula = `${expr}일 때 □가 ${boxVal}이면 △는?`;
-        return { formulaFront: formula, formulaBack: formula, answer: String(triangleVal) };
-    },
-
-    // ⑬ 대응 관계에서 처음 값 구하기 (△ → □, □가 항상 자연수가 되도록 역산 가능한 값만 사용)
-    g5s1_correspondence_backward() {
-        const type = randInt(0, 2);
-        let a, b, boxVal, triangleVal, expr;
-        if (type === 0) {
-            a = randInt(2, 9);
-            boxVal = randInt(2, 15);
-            triangleVal = boxVal * a;
-            expr = `△ = □ × ${a}`;
-        } else if (type === 1) {
-            a = randInt(2, 30);
-            boxVal = randInt(2, 20);
-            triangleVal = boxVal + a;
-            expr = `△ = □ + ${a}`;
-        } else {
-            a = randInt(2, 9);
-            b = randInt(1, 20);
-            boxVal = randInt(2, 15);
-            triangleVal = boxVal * a + b;
-            expr = `△ = □ × ${a} + ${b}`;
-        }
-        const formula = `${expr}일 때 △가 ${triangleVal}이면 □는?`;
-        return { formulaFront: formula, formulaBack: formula, answer: String(boxVal) };
-    },
-
-    // ⑭ 대응표의 빈칸 (규칙이 한 가지로 명확히 드러나도록 연속된 □ 값 사용)
-    g5s1_correspondence_table() {
-        const count = randInt(3, 5);
-        const startBox = randInt(1, 5);
-        const boxVals = [];
-        for (let i = 0; i < count; i++) boxVals.push(startBox + i);
-
-        const isMultiply = Math.random() < 0.5;
-        const a = isMultiply ? randInt(2, 9) : randInt(2, 20);
-        const triangleVals = boxVals.map((v) => (isMultiply ? v * a : v + a));
-
-        const blankIdx = randInt(1, count - 1); // 첫 항은 항상 제시
-        const answer = triangleVals[blankIdx];
-
-        const boxDisplay = boxVals.join(", ");
-        const triDisplay = triangleVals.map((v, i) => (i === blankIdx ? "?" : v)).join(", ");
-        const formula = `□: ${boxDisplay}<br>△: ${triDisplay}`;
-        return { formulaFront: formula, formulaBack: formula, answer: String(answer) };
-    },
 
     /* ========== 5학년 1학기 - 약분과 통분 ========== */
     // 세로형 분수 표시(makeFractionHTML)와 대분수 공용 함수(formatMixedNumber)를 재사용한다.
@@ -2027,61 +1754,6 @@ const problemGenerators = {
 
     /* ===== 5학년 2학기 - 합동과 대칭 (그림 없이 답이 명확한 문제) ===== */
 
-    // ⑯ 합동인 도형의 대응 꼭짓점 (꼭짓점 순서 = 대응 순서)
-    g5s2_congruent_vertex() {
-        const isTriangle = Math.random() < 0.5;
-        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
-        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
-        const shape = isTriangle ? "△" : "□";
-        const idx = randInt(0, lettersA.length - 1);
-        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
-        const formula = `${notation}일 때 꼭짓점 ${lettersA[idx]}에 대응하는 꼭짓점`;
-        return { formulaFront: formula, formulaBack: formula, answer: lettersB[idx] };
-    },
-
-    // ⑰ 합동인 도형의 대응변 길이
-    g5s2_congruent_side() {
-        const isTriangle = Math.random() < 0.5;
-        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
-        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
-        const shape = isTriangle ? "△" : "□";
-        const idx1 = randInt(0, lettersA.length - 1);
-        const idx2 = (idx1 + 1) % lettersA.length; // 인접한 두 꼭짓점으로 변 구성
-        const sideA = lettersA[idx1] + lettersA[idx2];
-        const sideB = lettersB[idx1] + lettersB[idx2];
-        const length = randInt(2, 30);
-        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
-        const formula = `${notation}이고 ${sideA}=${length}cm일 때 ${sideB}의 길이`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${length}cm` };
-    },
-
-    // ⑱ 합동인 도형의 대응각
-    g5s2_congruent_angle() {
-        const isTriangle = Math.random() < 0.5;
-        const lettersA = isTriangle ? ["A", "B", "C"] : ["A", "B", "C", "D"];
-        const lettersB = isTriangle ? ["D", "E", "F"] : ["E", "F", "G", "H"];
-        const shape = isTriangle ? "△" : "□";
-        const idx = randInt(0, lettersA.length - 1);
-        const degree = randInt(20, 150);
-        const notation = `${shape}${lettersA.join("")} ≡ ${shape}${lettersB.join("")}`;
-        const formula = `${notation}이고 ∠${lettersA[idx]}=${degree}°일 때 ∠${lettersB[idx]}의 크기`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${degree}°` };
-    },
-
-    // ⑲ 선대칭도형의 대응점과 대칭축 사이 거리 (두 거리는 항상 같음)
-    g5s2_line_symmetry_distance() {
-        const distance = randInt(2, 30);
-        const formula = `점 A와 A'이 대칭축에 대하여 서로 대응하고 A에서 대칭축까지의 거리가 ${distance}cm일 때 A'에서 대칭축까지의 거리`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${distance}cm` };
-    },
-
-    // ⑳ 점대칭도형의 대응점과 대칭 중심 사이 거리 (OA = OA')
-    g5s2_point_symmetry_distance() {
-        const distance = randInt(2, 30);
-        const formula = `점 A와 A'이 점 O를 중심으로 서로 대응하고 OA=${distance}cm일 때 OA'의 길이`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${distance}cm` };
-    },
-
     /* ===== 5학년 2학기 - 소수의 곱셈 (정수 스케일 연산만 사용) ===== */
 
     // ㉑ 소수 한 자리 수 × 자연수
@@ -2166,35 +1838,6 @@ const problemGenerators = {
 
     /* ===== 5학년 2학기 - 직육면체 (겨냥도·전개도 없이 텍스트로 판단) ===== */
 
-    // ㉘ 입체도형 이름 찾기
-    g5s2_cuboid_name() {
-        const isCube = Math.random() < 0.5;
-        const formula = isCube ? "6개의 면이 모두 정사각형인 입체도형" : "모든 면이 직사각형인 입체도형";
-        return { formulaFront: formula, formulaBack: formula, answer: isCube ? "정육면체" : "직육면체" };
-    },
-
-    // ㉙ 면·모서리·꼭짓점의 개수
-    g5s2_cuboid_count() {
-        const shapeName = Math.random() < 0.5 ? "직육면체" : "정육면체";
-        const parts = [
-            { word: "면", count: 6 },
-            { word: "모서리", count: 12 },
-            { word: "꼭짓점", count: 8 }
-        ];
-        const pick = parts[randInt(0, parts.length - 1)];
-        const formula = `${shapeName}의 ${pick.word}은 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${pick.count}개` };
-    },
-
-    // ㉚ 한 꼭짓점에서 만나는 구성 요소 (면 3개, 모서리 3개로 항상 동일)
-    g5s2_cuboid_vertex_meet() {
-        const shapeName = Math.random() < 0.5 ? "직육면체" : "정육면체";
-        const askFace = Math.random() < 0.5;
-        const word = askFace ? "면" : "모서리";
-        const formula = `${shapeName}의 한 꼭짓점에서 만나는 ${word}는 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: "3개" };
-    },
-
     // ㉛ 직육면체의 모든 모서리 길이의 합 (같은 길이의 모서리가 각각 4개)
     g5s2_cuboid_edge_total() {
         const w = randInt(2, 30);
@@ -2215,24 +1858,6 @@ const problemGenerators = {
         const givenText = givenKeys.map((k) => `${k} ${dims[k]}cm`).join(", ");
         const formula = `${givenText}인 직육면체의 모든 모서리 길이의 합이 ${total}cm일 때 ${targetKey}`;
         return { formulaFront: formula, formulaBack: formula, answer: `${dims[targetKey]}cm` };
-    },
-
-    // ㉝ 마주 보는 면의 성질 (마주 보는 두 면은 모양과 크기가 같음)
-    g5s2_cuboid_opposite_face() {
-        const w = randInt(2, 30);
-        const h = randInt(2, 30);
-        const askArea = Math.random() < 0.6;
-        let formula, answer;
-        if (askArea) {
-            formula = `한 면의 가로가 ${w}cm, 세로가 ${h}cm일 때 그 면과 마주 보는 면의 넓이`;
-            answer = formatCm2(w * h);
-        } else {
-            const askWhich = Math.random() < 0.5 ? "가로" : "세로";
-            const value = askWhich === "가로" ? w : h;
-            formula = `한 면의 가로가 ${w}cm, 세로가 ${h}cm일 때 그 면과 마주 보는 면의 ${askWhich}`;
-            answer = formatCm(value);
-        }
-        return { formulaFront: formula, formulaBack: formula, answer };
     },
 
     /* ===== 5학년 2학기 - 평균과 가능성 ===== */
@@ -2401,81 +2026,6 @@ const problemGenerators = {
     },
 
     /* ===== 6학년 1학기 - 각기둥과 각뿔 (그림·전개도 없이 텍스트로 판단) ===== */
-
-    // ⑥ 밑면을 보고 각기둥 이름 찾기
-    g6s1_prism_name() {
-        const n = randInt(3, 8);
-        const baseName = POLYGON_NAMES[n - 3];
-        const formula = `밑면이 ${baseName}인 각기둥`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${POLYGON_PREFIX_BY_N[n]}각기둥` };
-    },
-
-    // ⑦ 각기둥의 면·모서리·꼭짓점 수
-    g6s1_prism_component_count() {
-        const n = randInt(3, 8);
-        const counts = prismComponentCounts(n);
-        const parts = [
-            { word: "면", value: counts.faces },
-            { word: "모서리", value: counts.edges },
-            { word: "꼭짓점", value: counts.vertices }
-        ];
-        const pick = parts[randInt(0, parts.length - 1)];
-        const name = `${POLYGON_PREFIX_BY_N[n]}각기둥`;
-        const formula = `${name}의 ${pick.word}은 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
-    },
-
-    // ⑧ 각기둥의 옆면 수
-    g6s1_prism_lateral_face_count() {
-        const n = randInt(3, 8);
-        const name = `${POLYGON_PREFIX_BY_N[n]}각기둥`;
-        const formula = `${name}의 옆면은 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${n}개` };
-    },
-
-    // ⑨ 밑면을 보고 각뿔 이름 찾기
-    g6s1_pyramid_name() {
-        const n = randInt(3, 8);
-        const baseName = POLYGON_NAMES[n - 3];
-        const formula = `밑면이 ${baseName}인 각뿔`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${POLYGON_PREFIX_BY_N[n]}각뿔` };
-    },
-
-    // ⑩ 각뿔의 면·모서리·꼭짓점 수
-    g6s1_pyramid_component_count() {
-        const n = randInt(3, 8);
-        const counts = pyramidComponentCounts(n);
-        const parts = [
-            { word: "면", value: counts.faces },
-            { word: "모서리", value: counts.edges },
-            { word: "꼭짓점", value: counts.vertices }
-        ];
-        const pick = parts[randInt(0, parts.length - 1)];
-        const name = `${POLYGON_PREFIX_BY_N[n]}각뿔`;
-        const formula = `${name}의 ${pick.word}은 몇 개인가?`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
-    },
-
-    // ⑪ 각기둥·각뿔의 구성 요소 역산 (입체 종류를 명시해 답이 하나로 정해지게 함)
-    g6s1_solid_base_polygon_from_count() {
-        const isPrism = Math.random() < 0.5;
-        const n = randInt(3, 8);
-        const counts = isPrism ? prismComponentCounts(n) : pyramidComponentCounts(n);
-        const solidWord = isPrism ? "각기둥" : "각뿔";
-        const parts = [
-            { word: "면", value: counts.faces },
-            { word: "모서리", value: counts.edges },
-            { word: "꼭짓점", value: counts.vertices }
-        ];
-        const pick = parts[randInt(0, parts.length - 1)];
-        const askName = Math.random() < 0.5;
-        const baseName = POLYGON_NAMES[n - 3];
-        const formula = askName
-            ? `어떤 ${solidWord}의 ${pick.word}이 ${pick.value}개일 때 이 입체도형의 이름`
-            : `어떤 ${solidWord}의 ${pick.word}이 ${pick.value}개일 때 밑면은 몇각형인가?`;
-        const answer = askName ? `${POLYGON_PREFIX_BY_N[n]}${solidWord}` : baseName;
-        return { formulaFront: formula, formulaBack: formula, answer };
-    },
 
     /* ===== 6학년 1학기 - 소수의 나눗셈 (몫을 먼저 정하고 피제수를 역산) ===== */
 
@@ -3039,41 +2589,6 @@ const problemGenerators = {
 
     /* ===== 6학년 2학기 - 공간과 입체 (쌓기나무 수치만 텍스트로 제시) ===== */
 
-    // ⑭ 층별 쌓기나무 수의 합
-    g6s2_cube_layers_total() {
-        const layerCount = randInt(2, 4);
-        const layers = [];
-        for (let i = 0; i < layerCount; i++) layers.push(randInt(1, 15));
-        const total = layers.reduce((a, b) => a + b, 0);
-        const layerText = layers.map((v, idx) => `${idx + 1}층 ${v}개`).join(", ");
-        const formula = `${layerText}로 쌓았다. 전체 쌓기나무 수`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${total}개` };
-    },
-
-    // ⑮ 위에서 본 각 칸의 높이로 전체 개수 구하기
-    g6s2_cube_column_heights_total() {
-        const colCount = randInt(4, 7);
-        const heights = [];
-        for (let i = 0; i < colCount; i++) heights.push(randInt(1, 8));
-        const total = heights.reduce((a, b) => a + b, 0);
-        const formula = `위에서 보이는 ${colCount}개 칸의 높이가 ${heights.join(", ")}일 때 전체 쌓기나무 수`;
-        return { formulaFront: formula, formulaBack: formula, answer: `${total}개` };
-    },
-
-    // ⑯ 전체 개수로 빠진 칸의 높이 구하기
-    g6s2_cube_missing_column_height() {
-        const colCount = randInt(4, 7);
-        const heights = [];
-        for (let i = 0; i < colCount - 1; i++) heights.push(randInt(1, 8));
-        const missingHeight = randInt(1, 8);
-        const total = heights.reduce((a, b) => a + b, 0) + missingHeight;
-        const blankIdx = randInt(0, colCount - 1);
-        const display = [...heights];
-        display.splice(blankIdx, 0, "?");
-        const formula = `위에서 보이는 ${colCount}개 칸 중 나머지 칸의 높이가 ${display.join(", ")}이고 전체 쌓기나무 수가 ${total}개일 때 빈칸의 높이`;
-        return { formulaFront: formula, formulaBack: formula, answer: String(missingHeight) };
-    },
-
     /* ===== 6학년 2학기 - 비례식과 비례배분 ===== */
 
     // ⑰ 비를 간단한 자연수의 비로 나타내기
@@ -3264,66 +2779,6 @@ const problemGenerators = {
     },
 
     /* ===== 6학년 2학기 - 원기둥, 원뿔, 구 (그림·전개도 없이 구성 요소와 성질만 텍스트로) ===== */
-
-    // ㉜ 성질을 보고 입체도형 이름 찾기
-    g6s2_round_solid_name() {
-        const descriptions = {
-            "원기둥": "평평한 면이 2개이고 굽은 면이 1개인 입체도형",
-            "원뿔": "평평한 면이 1개이고 꼭짓점이 1개인 입체도형",
-            "구": "어느 방향에서 보아도 항상 원 모양으로 보이는 입체도형"
-        };
-        const names = Object.keys(descriptions);
-        const name = names[randInt(0, names.length - 1)];
-        const formula = descriptions[name];
-        return { formulaFront: formula, formulaBack: formula, answer: name };
-    },
-
-    // ㉝ 원기둥의 구성 요소 수
-    g6s2_cylinder_component_count() {
-        return roundSolidComponentQuestion("원기둥");
-    },
-
-    // ㉞ 원뿔의 구성 요소 수
-    g6s2_cone_component_count() {
-        return roundSolidComponentQuestion("원뿔");
-    },
-
-    // ㉟ 구의 구성 요소 수
-    g6s2_sphere_component_count() {
-        return roundSolidComponentQuestion("구");
-    },
-
-    // ㊱ 원기둥의 두 밑면의 성질
-    g6s2_cylinder_base_property() {
-        const questions = [
-            { q: "두 밑면은 서로 어떤 관계인가?", a: "평행합니다" },
-            { q: "두 밑면의 모양과 크기는 서로 어떠한가?", a: "합동입니다" }
-        ];
-        const pick = questions[randInt(0, questions.length - 1)];
-        const formula = `원기둥의 ${pick.q}`;
-        return { formulaFront: formula, formulaBack: formula, answer: pick.a };
-    },
-
-    // ㊲ 입체도형의 성질 판단 (틀린 문장은 실제 값과 정확히 1만큼만 다르게 하여 모호하지 않게 함)
-    g6s2_round_solid_property_check() {
-        const solids = ["원기둥", "원뿔", "구"];
-        const solidName = solids[randInt(0, solids.length - 1)];
-        const facts = ROUND_SOLID_FACTS[solidName];
-        const wantTrue = Math.random() < 0.5;
-        const properties = [
-            { word: "평평한 면", value: facts.flatFaces },
-            { word: "굽은 면", value: facts.curvedFaces },
-            { word: "모서리", value: facts.edges },
-            { word: "꼭짓점", value: facts.vertices }
-        ];
-        const pick = properties[randInt(0, properties.length - 1)];
-        let statedValue = pick.value;
-        if (!wantTrue) {
-            statedValue = pick.value + 1; // 실제 값보다 정확히 1 큰 값으로만 틀리게 만들어 모호함 방지
-        }
-        const formula = `${solidName}은 ${pick.word}이 ${statedValue}개이다.`;
-        return { formulaFront: formula, formulaBack: formula, answer: wantTrue ? "맞습니다" : "아닙니다" };
-    }
 };
 
 /**
