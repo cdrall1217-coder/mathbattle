@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우당탕탕 수학 카드 대결</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
+
+    <div id="audio-container" class="hidden"></div>
+
+    <div id="setup-screen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-8 border-8 border-indigo-600 transform transition-all scale-100">
+            <div class="text-center mb-6">
+                <span class="text-6xl mb-2 inline-block animate-bounce">🎒</span>
+                <h1 class="text-3xl font-jua text-slate-800 tracking-wide">수학 배틀 카드 게임</h1>
+                <p class="text-indigo-600 mt-1 font-extrabold text-md">이름을 입력하고 대결을 시작해요!</p>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-sm font-black text-slate-700 mb-1">🤠 플레이어 1 이름</label>
+                    <input type="text" id="p1-input" value="민우" maxlength="6" 
+                        class="w-full px-4 py-3 rounded-2xl border-4 border-indigo-100 focus:border-indigo-500 focus:outline-none font-bold text-lg text-slate-800 transition bg-slate-50 text-center">
+                </div>
+                <div>
+                    <label class="block text-sm font-black text-slate-700 mb-1">😎 플레이어 2 이름</label>
+                    <input type="text" id="p2-input" value="지아" maxlength="6" 
+                        class="w-full px-4 py-3 rounded-2xl border-4 border-indigo-100 focus:border-indigo-500 focus:outline-none font-bold text-lg text-slate-800 transition bg-slate-50 text-center">
+                </div>
+            </div>
+
+            <div id="warning-msg" class="hidden text-center text-rose-600 font-extrabold text-sm mb-4 bg-rose-50 p-3 rounded-xl border-2 border-rose-200">
+                ⚠️ 이름을 모두 입력해 주세요!
+            </div>
+
+            <button onclick="startGame()" 
+                class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-jua text-2xl py-4 px-6 rounded-2xl shadow-lg transition-all duration-200">
+                출발하기! 🚀
+            </button>
+        </div>
+    </div>
+
+    <header class="bg-white border-b-4 border-indigo-200 py-4 px-6 shadow-md">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-3xl">✏️</span>
+                <h2 class="text-2xl font-jua text-indigo-900">우당탕탕 수학 카드 배틀</h2>
+            </div>
+            
+            <div id="score-battle-view" class="flex items-center gap-4">
+                <div class="bg-blue-600 border-4 border-blue-800 px-5 py-2 rounded-2xl flex items-center gap-3 shadow-md">
+                    <span class="text-2xl">🤠</span>
+                    <div>
+                        <div class="text-xs text-blue-100 font-black" id="p1-score-label">민우</div>
+                        <div class="text-2xl font-jua text-white" id="p1-score-display">0 점</div>
+                    </div>
+                </div>
+                
+                <span class="text-3xl font-jua text-indigo-600">VS</span>
+
+                <div class="bg-rose-600 border-4 border-rose-800 px-5 py-2 rounded-2xl flex items-center gap-3 shadow-md">
+                    <span class="text-2xl">😎</span>
+                    <div>
+                        <div class="text-xs text-rose-100 font-black" id="p2-score-label">지아</div>
+                        <div class="text-2xl font-jua text-white" id="p2-score-display">0 점</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="score-coop-view" class="hidden flex items-center gap-3 bg-violet-700 border-4 border-violet-900 px-6 py-2 rounded-2xl shadow-md">
+                <span class="text-2xl">🤝</span>
+                <div>
+                    <div class="text-xs text-violet-100 font-black">공동 점수</div>
+                    <div class="text-2xl font-jua text-white" id="shared-score-display">0 점</div>
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-xl text-sm transition flex items-center gap-1 border border-slate-300">
+                <i class="fa-solid fa-rotate"></i> 처음부터 다시 하기
+            </button>
+        </div>
+    </header>
+
+    <div class="bg-slate-800 border-b-4 border-slate-900 py-3 px-4 shadow-inner">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-slate-700">
+                <div id="selection-summary" class="text-sm text-slate-200 font-bold leading-relaxed">
+                    문제 설정을 선택해 주세요
+                </div>
+                <button type="button" id="btn-toggle-menu" onclick="toggleSelectionMenu()"
+                    class="px-4 py-2 rounded-xl font-jua text-sm bg-indigo-600 hover:bg-indigo-500 text-white border-2 border-indigo-400 transition active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span id="btn-toggle-menu-label">문제 설정</span>
+                    <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200" id="menu-arrow"></i>
+                </button>
+            </div>
+
+            <div id="selection-panel" class="dropdown-panel is-open">
+                <div class="pt-3 pb-1">
+                    <div class="flex flex-wrap justify-center gap-2 mb-3" id="menu-step-tabs"></div>
+                    <div id="menu-step-title" class="text-center font-jua text-lg text-indigo-200 mb-3">1. 학년 선택</div>
+                    <div id="menu-options" class="flex flex-wrap justify-center gap-2 py-2"></div>
+                    <div id="menu-hint" class="hidden text-center text-rose-300 text-xs font-bold mt-2"></div>
+                    <div id="menu-actions" class="flex flex-wrap justify-center gap-2 pt-3 pb-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="boss-bar" class="hidden bg-slate-900 border-b-4 border-rose-700 py-3 px-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <div class="font-jua text-rose-200 text-lg">🐉 협동 보스전</div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-black text-amber-200 bg-amber-900/50 px-3 py-1 rounded-full border border-amber-700" id="boss-difficulty-label">쉬움 난이도</span>
+                    <div class="font-bold text-rose-100 text-sm" id="boss-hp-label">HP 100 / 100</div>
+                </div>
+            </div>
+            <div class="h-4 bg-slate-700 rounded-full overflow-hidden border-2 border-slate-600">
+                <div id="boss-hp-fill" class="h-full bg-gradient-to-r from-rose-500 to-amber-400 transition-all duration-300" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-screen" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-8 border-8 border-amber-400 text-center">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 class="text-3xl font-jua text-slate-800 mb-3" id="victory-title">보스 격파!</h2>
+            <p class="text-slate-600 font-bold mb-2 leading-relaxed" id="victory-message">함께 보스를 물리쳤어요!</p>
+            <p class="text-indigo-600 font-extrabold mb-6" id="victory-shared-score">공동 점수 0점</p>
+            <button type="button" onclick="closeVictoryScreen()"
+                class="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-jua text-xl py-4 px-6 rounded-2xl shadow-lg transition-all duration-200">
+                다시 도전하기! 🚀
+            </button>
+        </div>
+    </div>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 flex flex-col justify-center">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-4xl mx-auto w-full px-2">
+            
+            <div class="flex flex-col items-center">
+                <div class="w-full max-w-sm h-[20.5rem] card-container">
+                    <div id="card-inner-0" onpointerdown="flipCard(0)" class="card-inner">
+                        <div class="card-front card-front-a flex flex-col justify-between p-6">
+                            <div class="flex justify-between items-center text-blue-100 font-bold text-sm">
+                                <span class="bg-white/20 px-3 py-1 rounded-full">🌈 CARD A</span>
+                                <span class="text-xs bg-yellow-400 text-slate-900 px-3 py-1 rounded-full font-black" id="card-tag-front-0">두 자리 덧셈</span>
+                            </div>
+                            <div class="my-auto flex flex-col items-center justify-center">
+                                <span class="text-xs bg-black/30 text-blue-100 px-3 py-1 rounded-full font-extrabold mb-3">터치해서 확인하기</span>
+                                <div class="text-3xl md:text-3.5xl font-black tracking-wide text-white drop-shadow-md flex items-center justify-center gap-1" id="card-formula-0">
+                                    -- + --
+                                </div>
+                            </div>
+                            <div class="text-blue-100 text-xs font-bold">머릿속으로 계산해 보아요! 🎨</div>
+                        </div>
+                        
+                        <div class="card-back flex flex-col justify-between p-5">
+                            <div class="flex justify-between items-center text-emerald-100 font-bold text-xs">
+                                <span class="bg-white/20 px-2.5 py-0.5 rounded-full">✨ 정답공개!</span>
+                                <span class="text-xs bg-emerald-700/60 text-white px-2.5 py-0.5 rounded-full font-black flex items-center gap-1" id="card-formula-back-0">-- + --</span>
+                            </div>
+                            
+                            <div class="my-auto py-1 flex items-center justify-center">
+                                <div class="text-3.5xl md:text-4xl font-black text-yellow-300 filter drop-shadow-md flex items-center justify-center gap-1" id="card-answer-0">
+                                    --
+                                </div>
+                            </div>
+                            
+                            <div class="bg-black/20 p-2.5 rounded-2xl space-y-1.5" onpointerdown="event.stopPropagation();">
+                                <div class="text-center font-bold text-[11px] text-emerald-200">결과를 선택하면 카드가 바뀝니다</div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(0, 1, true)" id="p1-card0-correct" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-blue-500/90 hover:bg-blue-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-blue-400">
+                                        🤠 <span class="p1-name">P1</span> 정답
+                                    </button>
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(0, 1, false)" id="p1-card0-wrong" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-rose-500/90 hover:bg-rose-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-rose-400">
+                                        💦 <span class="p1-name">P1</span> 오답
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(0, 2, true)" id="p2-card0-correct" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-amber-500/95 hover:bg-amber-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-amber-400">
+                                        😎 <span class="p2-name">P2</span> 정답
+                                    </button>
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(0, 2, false)" id="p2-card0-wrong" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-rose-500/90 hover:bg-rose-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-rose-400">
+                                        💦 <span class="p2-name">P2</span> 오답
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div class="w-full max-w-sm h-[20.5rem] card-container">
+                    <div id="card-inner-1" onpointerdown="flipCard(1)" class="card-inner">
+                        <div class="card-front card-front-b flex flex-col justify-between p-6">
+                            <div class="flex justify-between items-center text-red-100 font-bold text-sm">
+                                <span class="bg-white/20 px-3 py-1 rounded-full">🍒 CARD B</span>
+                                <span class="text-xs bg-yellow-400 text-slate-900 px-3 py-1 rounded-full font-black" id="card-tag-front-1">두 자리 덧셈</span>
+                            </div>
+                            <div class="my-auto flex flex-col items-center justify-center">
+                                <span class="text-xs bg-black/30 text-red-100 px-3 py-1 rounded-full font-extrabold mb-3">터치해서 확인하기</span>
+                                <div class="text-3xl md:text-3.5xl font-black tracking-wide text-white drop-shadow-md flex items-center justify-center gap-1" id="card-formula-1">
+                                    -- + --
+                                </div>
+                            </div>
+                            <div class="text-red-100 text-xs font-bold">머릿속으로 계산해 보아요! 🎨</div>
+                        </div>
+                        
+                        <div class="card-back flex flex-col justify-between p-5">
+                            <div class="flex justify-between items-center text-emerald-100 font-bold text-xs">
+                                <span class="bg-white/20 px-2.5 py-0.5 rounded-full">✨ 정답공개!</span>
+                                <span class="text-xs bg-emerald-700/60 text-white px-2.5 py-0.5 rounded-full font-black flex items-center gap-1" id="card-formula-back-1">-- + --</span>
+                            </div>
+                            
+                            <div class="my-auto py-1 flex items-center justify-center">
+                                <div class="text-3.5xl md:text-4xl font-black text-yellow-300 filter drop-shadow-md flex items-center justify-center gap-1" id="card-answer-1">
+                                    --
+                                </div>
+                            </div>
+                            
+                            <div class="bg-black/20 p-2.5 rounded-2xl space-y-1.5" onpointerdown="event.stopPropagation();">
+                                <div class="text-center font-bold text-[11px] text-emerald-200">결과를 선택하면 카드가 바뀝니다</div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(1, 1, true)" id="p1-card1-correct" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-blue-500/90 hover:bg-blue-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-blue-400">
+                                        🤠 <span class="p1-name">P1</span> 정답
+                                    </button>
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(1, 1, false)" id="p1-card1-wrong" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-rose-500/90 hover:bg-rose-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-rose-400">
+                                        💦 <span class="p1-name">P1</span> 오답
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(1, 2, true)" id="p2-card1-correct" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-amber-500/95 hover:bg-amber-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-amber-400">
+                                        😎 <span class="p2-name">P2</span> 정답
+                                    </button>
+                                    <button onpointerdown="event.stopPropagation(); scoreAction(1, 2, false)" id="p2-card1-wrong" disabled
+                                        class="py-2.5 px-2 rounded-xl font-bold text-xs text-white bg-rose-500/90 hover:bg-rose-600 active:scale-95 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-1 border border-rose-400">
+                                        💦 <span class="p2-name">P2</span> 오답
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="text-center py-3 bg-white border-t-4 border-indigo-200 text-xs text-indigo-900 font-extrabold shadow-inner">
+        🧸 신나는 수학 놀이터 배틀 카드 게임
+    </footer>
+
+    <script src="problemCatalog.js"></script>
+    <script src="problemGenerators.js"></script>
+    <script src="battleMode.js"></script>
+    <script src="coopBossMode.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
