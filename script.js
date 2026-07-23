@@ -5,11 +5,12 @@ const gameState = {
         p2: { name: "지아", score: 0 }
     },
     selectedGrade: null,
+    selectedSemester: null, // 1 | 2
     selectedAreaId: null,
     selectedSubjects: [],
     playStyle: null, // 'battle' | 'coop'
     bossDifficulty: null, // 'easy' | 'normal' | 'hard'
-    menuStep: "grade", // grade | area | subjects | playstyle
+    menuStep: "grade", // grade | semester | area | subjects | playstyle
     menuOpen: true,
     selectionReady: false,
     currentSubjectId: "add2",
@@ -24,9 +25,10 @@ const gameState = {
 
 const MENU_STEPS = [
     { id: "grade", label: "1. 학년" },
-    { id: "area", label: "2. 영역" },
-    { id: "subjects", label: "3. 종목" },
-    { id: "playstyle", label: "4. 방식" }
+    { id: "semester", label: "2. 학기" },
+    { id: "area", label: "3. 영역" },
+    { id: "subjects", label: "4. 종목" },
+    { id: "playstyle", label: "5. 방식" }
 ];
 
 const BTN_BASE = "px-3.5 py-2 rounded-xl text-xs font-black border-2 transition-all duration-150 active:scale-95";
@@ -135,8 +137,9 @@ function setMenuStep(stepId) {
     const targetIdx = order.indexOf(stepId);
     if (targetIdx < 0) return;
 
-    if (stepId === "area" && gameState.selectedGrade == null) return;
-    if (stepId === "subjects" && (!gameState.selectedGrade || !gameState.selectedAreaId)) return;
+    if (stepId === "semester" && gameState.selectedGrade == null) return;
+    if (stepId === "area" && (gameState.selectedGrade == null || gameState.selectedSemester == null)) return;
+    if (stepId === "subjects" && (!gameState.selectedGrade || !gameState.selectedSemester || !gameState.selectedAreaId)) return;
     if (stepId === "playstyle" && gameState.selectedSubjects.length === 0) return;
 
     gameState.menuStep = stepId;
@@ -151,6 +154,22 @@ function getActivePlayMode() {
 
 function selectGrade(grade) {
     gameState.selectedGrade = Number(grade);
+    gameState.selectedSemester = null;
+    gameState.selectedAreaId = null;
+    gameState.selectedSubjects = [];
+    gameState.playStyle = null;
+    gameState.bossDifficulty = null;
+    gameState.selectionReady = false;
+    gameState.menuStep = "semester";
+    playBeep('flip');
+    renderSelectionMenu();
+    updateSelectionSummary();
+    getActivePlayMode().updateUI(gameState);
+}
+
+function selectSemester(semester) {
+    if (gameState.selectedGrade == null) return;
+    gameState.selectedSemester = Number(semester);
     gameState.selectedAreaId = null;
     gameState.selectedSubjects = [];
     gameState.playStyle = null;
@@ -164,7 +183,7 @@ function selectGrade(grade) {
 }
 
 function selectArea(areaId) {
-    if (gameState.selectedGrade == null) return;
+    if (gameState.selectedGrade == null || gameState.selectedSemester == null) return;
     gameState.selectedAreaId = areaId;
     gameState.selectedSubjects = [];
     gameState.playStyle = null;
@@ -276,7 +295,8 @@ function renderStepTabs() {
         btn.type = "button";
         const reachable =
             step.id === "grade" ||
-            (step.id === "area" && gameState.selectedGrade != null) ||
+            (step.id === "semester" && gameState.selectedGrade != null) ||
+            (step.id === "area" && gameState.selectedGrade != null && gameState.selectedSemester != null) ||
             (step.id === "subjects" && gameState.selectedAreaId) ||
             (step.id === "playstyle" && gameState.selectedSubjects.length > 0);
 
@@ -311,27 +331,26 @@ function renderSelectionMenu() {
 
     if (gameState.menuStep === "grade") {
         titleEl.textContent = "1. 학년을 선택하세요";
-        problemCatalog.forEach((gradeEntry) => {
+        SELECTABLE_GRADES.forEach((grade) => {
+            const gradeEntry = getGradeEntry(grade);
             const btn = document.createElement('button');
             btn.type = "button";
-            btn.className = gameState.selectedGrade === gradeEntry.grade ? BTN_ACTIVE : BTN_IDLE;
-            btn.textContent = gradeEntry.label;
-            btn.onclick = () => selectGrade(gradeEntry.grade);
+            btn.className = gameState.selectedGrade === grade ? BTN_ACTIVE : BTN_IDLE;
+            btn.textContent = gradeEntry ? gradeEntry.label : `${grade}학년`;
+            btn.onclick = () => selectGrade(grade);
             optionsEl.appendChild(btn);
         });
         return;
     }
 
-    if (gameState.menuStep === "area") {
-        titleEl.textContent = "2. 영역을 선택하세요";
-        const gradeEntry = getGradeEntry(gameState.selectedGrade);
-        if (!gradeEntry) return;
-        gradeEntry.areas.forEach((area) => {
+    if (gameState.menuStep === "semester") {
+        titleEl.textContent = "2. 학기를 선택하세요";
+        semesterOptions.forEach((sem) => {
             const btn = document.createElement('button');
             btn.type = "button";
-            btn.className = gameState.selectedAreaId === area.id ? BTN_ACTIVE : BTN_IDLE;
-            btn.textContent = area.label;
-            btn.onclick = () => selectArea(area.id);
+            btn.className = gameState.selectedSemester === sem.id ? BTN_ACTIVE : BTN_IDLE;
+            btn.textContent = sem.label;
+            btn.onclick = () => selectSemester(sem.id);
             optionsEl.appendChild(btn);
         });
 
@@ -344,12 +363,44 @@ function renderSelectionMenu() {
         return;
     }
 
-    if (gameState.menuStep === "subjects") {
-        titleEl.textContent = "3. 세부 종목을 선택하세요 (여러 개 가능)";
-        const area = getAreaEntry(gameState.selectedGrade, gameState.selectedAreaId);
-        if (!area) return;
+    if (gameState.menuStep === "area") {
+        titleEl.textContent = "3. 영역을 선택하세요";
+        const areas = getAreasForGradeSemester(gameState.selectedGrade, gameState.selectedSemester);
 
-        area.subjects.forEach((subject) => {
+        const backBtn = document.createElement('button');
+        backBtn.type = "button";
+        backBtn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-600 text-white border border-slate-500 hover:bg-slate-500";
+        backBtn.textContent = "← 학기로";
+        backBtn.onclick = () => setMenuStep("semester");
+
+        if (areas.length === 0) {
+            const notice = document.createElement('div');
+            notice.className = "w-full text-center text-amber-200 font-jua text-lg py-4";
+            notice.textContent = "🚧 문제 준비 중이에요! 다른 학년/학기를 선택해 주세요.";
+            optionsEl.appendChild(notice);
+            actionsEl.appendChild(backBtn);
+            return;
+        }
+
+        areas.forEach((area) => {
+            const btn = document.createElement('button');
+            btn.type = "button";
+            btn.className = gameState.selectedAreaId === area.id ? BTN_ACTIVE : BTN_IDLE;
+            btn.textContent = area.label;
+            btn.onclick = () => selectArea(area.id);
+            optionsEl.appendChild(btn);
+        });
+
+        actionsEl.appendChild(backBtn);
+        return;
+    }
+
+    if (gameState.menuStep === "subjects") {
+        titleEl.textContent = "4. 세부 종목을 선택하세요 (여러 개 가능)";
+        const subjects = getSubjectsForGradeAreaSemester(gameState.selectedGrade, gameState.selectedAreaId, gameState.selectedSemester);
+        if (!subjects.length) return;
+
+        subjects.forEach((subject) => {
             const btn = document.createElement('button');
             btn.type = "button";
             const selected = gameState.selectedSubjects.includes(subject.id);
@@ -377,7 +428,7 @@ function renderSelectionMenu() {
 
     if (gameState.menuStep === "playstyle") {
         if (gameState.playStyle === "coop" && !gameState.selectionReady) {
-            titleEl.textContent = "4. 보스전 난이도를 선택하세요";
+            titleEl.textContent = "5. 보스전 난이도를 선택하세요";
             Object.values(BOSS_DIFFICULTIES).forEach((diff) => {
                 const btn = document.createElement('button');
                 btn.type = "button";
@@ -401,7 +452,7 @@ function renderSelectionMenu() {
             return;
         }
 
-        titleEl.textContent = "4. 게임 방식을 선택하세요";
+        titleEl.textContent = "5. 게임 방식을 선택하세요";
         playStyleOptions.forEach((opt) => {
             const btn = document.createElement('button');
             btn.type = "button";
@@ -423,15 +474,19 @@ function renderSelectionMenu() {
 function updateSelectionSummary() {
     const el = document.getElementById('selection-summary');
     const gradeEntry = getGradeEntry(gameState.selectedGrade);
-    const area = getAreaEntry(gameState.selectedGrade, gameState.selectedAreaId);
+    const semesterEntry = semesterOptions.find((s) => s.id === gameState.selectedSemester);
+    const area = gameState.selectedAreaId
+        ? getAreasForGradeSemester(gameState.selectedGrade, gameState.selectedSemester).find((a) => a.id === gameState.selectedAreaId)
+        : null;
     const style = playStyleOptions.find((p) => p.id === gameState.playStyle);
 
     if (!gradeEntry) {
-        el.textContent = "① 학년 → ② 영역 → ③ 종목(복수) → ④ 게임 방식을 선택하세요";
+        el.textContent = "① 학년 → ② 학기 → ③ 영역 → ④ 종목(복수) → ⑤ 게임 방식을 선택하세요";
         return;
     }
 
     const parts = [`📚 ${gradeEntry.label}`];
+    if (semesterEntry) parts.push(`🗓️ ${semesterEntry.label}`);
     if (area) parts.push(`📂 ${area.label}`);
     if (gameState.selectedSubjects.length) {
         const names = gameState.selectedSubjects.map(getSubjectLabel);
@@ -521,7 +576,7 @@ function flipCard(cardIdx) {
     if (!gameState.selectionReady || !gameState.selectedSubjects.length) {
         gameState.menuOpen = true;
         updateMenuPanelVisibility();
-        showMenuHint("학년 → 영역 → 종목 → 게임 방식을 먼저 선택해 주세요!");
+        showMenuHint("학년 → 학기 → 영역 → 종목 → 게임 방식을 먼저 선택해 주세요!");
         return;
     }
 

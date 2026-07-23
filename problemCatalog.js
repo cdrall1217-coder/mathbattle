@@ -2,6 +2,8 @@
  * 문제 종목 카탈로그
  * - grade: 1~6
  * - areas[].subjects[].id 는 problemGenerators 의 키와 일치해야 함
+ * - areas[].subjects[].semester: 1(1학기) 또는 2(2학기). 아직 학기가 구분되지 않은
+ *   종목(3학년 외 학년)은 semester 값이 없으며, 학기 필터에 걸려 메뉴에 노출되지 않는다.
  * 메뉴는 이 데이터로만 자동 생성된다.
  */
 const problemCatalog = [
@@ -50,32 +52,32 @@ const problemCatalog = [
                 id: "number",
                 label: "수와 연산",
                 subjects: [
-                    { id: "add2", label: "두 자리 덧셈" },
-                    { id: "sub2", label: "두 자리 뺄셈" },
-                    { id: "add3", label: "세 자리 덧셈" },
-                    { id: "sub3", label: "세 자리 뺄셈" },
-                    { id: "div_single", label: "두 자리 ÷ 한 자리 (몫 한 자리)" },
-                    { id: "mul_tens", label: "몇십몇 × 몇" },
-                    { id: "mul_hundreds", label: "세 자리 × 한 자리" },
-                    { id: "mul_double", label: "두 자리 × 두 자리" },
-                    { id: "div_no_rem2", label: "두 자리 ÷ 한 자리 (나머지 없음)" },
-                    { id: "div_rem2", label: "두 자리 ÷ 한 자리 (나머지 있음)" },
-                    { id: "div_no_rem3", label: "세 자리 ÷ 한 자리 (나머지 없음)" },
-                    { id: "div_rem3", label: "세 자리 ÷ 한 자리 (나머지 있음)" },
-                    { id: "frac_of", label: "~의 몇 분의 몇" },
-                    { id: "frac_imp", label: "가분수 ↔ 대분수" }
+                    { id: "add2", label: "두 자리 덧셈", semester: 1 },
+                    { id: "sub2", label: "두 자리 뺄셈", semester: 1 },
+                    { id: "add3", label: "세 자리 덧셈", semester: 1 },
+                    { id: "sub3", label: "세 자리 뺄셈", semester: 1 },
+                    { id: "div_single", label: "두 자리 ÷ 한 자리 (몫 한 자리)", semester: 1 },
+                    { id: "mul_tens", label: "몇십몇 × 몇", semester: 1 },
+                    { id: "mul_hundreds", label: "세 자리 × 한 자리", semester: 1 },
+                    { id: "div_no_rem2", label: "두 자리 ÷ 한 자리 (나머지 없음)", semester: 1 },
+                    { id: "frac_of", label: "~의 몇 분의 몇", semester: 1 },
+                    { id: "mul_double", label: "두 자리 × 두 자리", semester: 2 },
+                    { id: "div_rem2", label: "두 자리 ÷ 한 자리 (나머지 있음)", semester: 2 },
+                    { id: "div_no_rem3", label: "세 자리 ÷ 한 자리 (나머지 없음)", semester: 2 },
+                    { id: "div_rem3", label: "세 자리 ÷ 한 자리 (나머지 있음)", semester: 2 },
+                    { id: "frac_imp", label: "가분수 ↔ 대분수", semester: 2 }
                 ]
             },
             {
                 id: "measure",
                 label: "측정",
                 subjects: [
-                    { id: "unit_len", label: "cm ↔ mm 단위 변환" },
-                    { id: "unit_dist", label: "km ↔ m 단위 변환" },
-                    { id: "time_add_no", label: "시간 덧셈 (받아올림 없음)" },
-                    { id: "time_add_yes", label: "시간 덧셈 (받아올림 있음)" },
-                    { id: "time_sub_no", label: "시간 뺄셈 (받아내림 없음)" },
-                    { id: "time_sub_yes", label: "시간 뺄셈 (받아내림 있음)" }
+                    { id: "unit_len", label: "cm ↔ mm 단위 변환", semester: 1 },
+                    { id: "unit_dist", label: "km ↔ m 단위 변환", semester: 1 },
+                    { id: "time_add_no", label: "시간 덧셈 (받아올림 없음)", semester: 1 },
+                    { id: "time_add_yes", label: "시간 덧셈 (받아올림 있음)", semester: 1 },
+                    { id: "time_sub_no", label: "시간 뺄셈 (받아내림 없음)", semester: 1 },
+                    { id: "time_sub_yes", label: "시간 뺄셈 (받아내림 있음)", semester: 1 }
                 ]
             }
         ]
@@ -88,6 +90,7 @@ const problemCatalog = [
                 id: "number",
                 label: "수와 연산",
                 subjects: [
+                    // 학기 미배정(준비 중) 기존 항목 - semester 없음
                     { id: "add3", label: "세 자리 덧셈" },
                     { id: "sub3", label: "세 자리 뺄셈" },
                     { id: "mul_hundreds", label: "세 자리 × 한 자리" },
@@ -95,7 +98,17 @@ const problemCatalog = [
                     { id: "div_no_rem3", label: "세 자리 ÷ 한 자리 (나머지 없음)" },
                     { id: "div_rem3", label: "세 자리 ÷ 한 자리 (나머지 있음)" },
                     { id: "frac_of", label: "~의 몇 분의 몇" },
-                    { id: "frac_imp", label: "가분수 ↔ 대분수" }
+                    { id: "frac_imp", label: "가분수 ↔ 대분수" },
+                    // 4학년 1학기 - 큰 수
+                    { id: "g4s1_large_compare", label: "큰 수의 크기 비교", semester: 1 },
+                    { id: "g4s1_place_value", label: "큰 수의 자릿값", semester: 1 },
+                    { id: "g4s1_pow10", label: "자연수의 10배·100배·1000배", semester: 1 },
+                    // 4학년 1학기 - 곱셈
+                    { id: "g4s1_mul_3x2", label: "세 자리 수 × 두 자리 수", semester: 1 },
+                    { id: "g4s1_mul_round", label: "몇백몇십 × 몇십", semester: 1 },
+                    // 4학년 1학기 - 나눗셈
+                    { id: "g4s1_div_3x2_no_rem", label: "세 자리 수 ÷ 두 자리 수 (나머지 없음)", semester: 1 },
+                    { id: "g4s1_div_3x2_rem", label: "세 자리 수 ÷ 두 자리 수 (나머지 있음)", semester: 1 }
                 ]
             },
             {
@@ -105,6 +118,23 @@ const problemCatalog = [
                     { id: "unit_dist", label: "km ↔ m 단위 변환" },
                     { id: "time_add_yes", label: "시간 덧셈 (받아올림 있음)" },
                     { id: "time_sub_yes", label: "시간 뺄셈 (받아내림 있음)" }
+                ]
+            },
+            {
+                id: "shape_measure",
+                label: "도형과 측정",
+                subjects: [
+                    { id: "g4s1_angle_add", label: "각도의 합", semester: 1 },
+                    { id: "g4s1_angle_sub", label: "각도의 차", semester: 1 },
+                    { id: "g4s1_angle_complement", label: "직각·평각을 만드는 각", semester: 1 }
+                ]
+            },
+            {
+                id: "pattern",
+                label: "변화와 관계",
+                subjects: [
+                    { id: "g4s1_seq_up", label: "일정하게 커지는 수의 규칙", semester: 1 },
+                    { id: "g4s1_seq_down", label: "일정하게 작아지는 수의 규칙", semester: 1 }
                 ]
             }
         ]
@@ -153,6 +183,14 @@ const playStyleOptions = [
     { id: "coop", label: "협동 보스전", description: "힘을 합쳐 보스를 쓰러뜨리기" }
 ];
 
+/** 학년 선택 메뉴에 노출할 학년 목록 (요구사항: 3~6학년만 선택 가능) */
+const SELECTABLE_GRADES = [3, 4, 5, 6];
+
+const semesterOptions = [
+    { id: 1, label: "1학기" },
+    { id: 2, label: "2학기" }
+];
+
 function getGradeEntry(grade) {
     return problemCatalog.find((g) => g.grade === Number(grade)) || null;
 }
@@ -161,6 +199,29 @@ function getAreaEntry(grade, areaId) {
     const gradeEntry = getGradeEntry(grade);
     if (!gradeEntry) return null;
     return gradeEntry.areas.find((a) => a.id === areaId) || null;
+}
+
+/**
+ * 선택한 학년의 학기에 해당하는 문제(semester 일치)만 남긴 영역 목록을 반환한다.
+ * 세부 종목이 하나도 없는 영역은 결과에서 제외된다.
+ */
+function getAreasForGradeSemester(grade, semester) {
+    const gradeEntry = getGradeEntry(grade);
+    if (!gradeEntry || semester == null) return [];
+    return gradeEntry.areas
+        .map((area) => ({
+            id: area.id,
+            label: area.label,
+            subjects: area.subjects.filter((s) => s.semester === Number(semester))
+        }))
+        .filter((area) => area.subjects.length > 0);
+}
+
+/** 선택한 학년·영역·학기에 해당하는 세부 종목 목록을 반환한다. */
+function getSubjectsForGradeAreaSemester(grade, areaId, semester) {
+    const areas = getAreasForGradeSemester(grade, semester);
+    const area = areas.find((a) => a.id === areaId);
+    return area ? area.subjects : [];
 }
 
 function getSubjectEntry(subjectId) {
