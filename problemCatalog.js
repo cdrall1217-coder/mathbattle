@@ -292,12 +292,116 @@ const problemCatalog = [
                 id: "number",
                 label: "수와 연산",
                 subjects: [
+                    // 학기 미배정(준비 중) 기존 항목 - semester 없음
                     { id: "frac_of", label: "~의 몇 분의 몇" },
                     { id: "frac_imp", label: "가분수 ↔ 대분수" },
                     { id: "dec_add", label: "소수 덧셈" },
                     { id: "dec_sub", label: "소수 뺄셈" },
                     { id: "percent", label: "백분율 구하기" },
-                    { id: "ratio", label: "비와 비율" }
+                    { id: "ratio", label: "비와 비율" },
+                    // 6학년 1학기 - 분수의 나눗셈
+                    { id: "g6s1_natural_div_natural_proper", label: "자연수 ÷ 자연수 (몫이 1보다 작음)", semester: 1 },
+                    { id: "g6s1_natural_div_natural_mixed", label: "자연수 ÷ 자연수 (몫이 1보다 큼)", semester: 1 },
+                    { id: "g6s1_proper_fraction_div_natural", label: "진분수 ÷ 자연수", semester: 1 },
+                    { id: "g6s1_improper_fraction_div_natural", label: "가분수 ÷ 자연수", semester: 1 },
+                    { id: "g6s1_mixed_fraction_div_natural", label: "대분수 ÷ 자연수", semester: 1 },
+                    // 6학년 1학기 - 소수의 나눗셈
+                    { id: "g6s1_decimal_1_div_natural", label: "소수 한 자리 수 ÷ 자연수", semester: 1 },
+                    { id: "g6s1_decimal_2_div_natural", label: "소수 두 자리 수 ÷ 자연수", semester: 1 },
+                    { id: "g6s1_decimal_div_natural_under_1", label: "몫이 1보다 작은 소수 ÷ 자연수", semester: 1 },
+                    { id: "g6s1_decimal_div_zero_tenths", label: "몫의 소수 첫째 자리에 0이 있는 나눗셈", semester: 1 },
+                    { id: "g6s1_decimal_div_append_zero", label: "소수점 아래 0을 내려 계산하는 나눗셈", semester: 1 },
+                    { id: "g6s1_natural_div_natural_decimal", label: "자연수 ÷ 자연수의 몫을 소수로 나타내기", semester: 1 },
+                    // 6학년 2학기 - 분수의 나눗셈
+                    { id: "g6s2_same_den_fraction_div_exact", label: "분모가 같고 나누어떨어지는 분수 ÷ 분수", semester: 2 },
+                    { id: "g6s2_same_den_fraction_div_nonexact", label: "분모가 같고 나누어떨어지지 않는 분수 ÷ 분수", semester: 2 },
+                    { id: "g6s2_unlike_fraction_div", label: "분모가 다른 진분수 ÷ 진분수", semester: 2 },
+                    { id: "g6s2_natural_div_unit_fraction", label: "자연수 ÷ 단위분수", semester: 2 },
+                    { id: "g6s2_natural_div_fraction", label: "자연수 ÷ 진분수", semester: 2 },
+                    { id: "g6s2_fraction_div_fraction", label: "진분수 또는 가분수 ÷ 분수", semester: 2 },
+                    { id: "g6s2_mixed_fraction_div_fraction", label: "대분수 ÷ 대분수 또는 진분수", semester: 2 },
+                    // 6학년 2학기 - 소수의 나눗셈
+                    { id: "g6s2_decimal_1_div_decimal_1", label: "소수 한 자리 수 ÷ 소수 한 자리 수", semester: 2 },
+                    { id: "g6s2_decimal_2_div_decimal_2", label: "소수 두 자리 수 ÷ 소수 두 자리 수", semester: 2 },
+                    { id: "g6s2_decimal_mixed_places_div", label: "자릿수가 다른 소수 ÷ 소수", semester: 2 },
+                    { id: "g6s2_natural_div_decimal", label: "자연수 ÷ 소수", semester: 2 },
+                    { id: "g6s2_decimal_quotient_rounding", label: "몫을 반올림하여 나타내기", semester: 2 },
+                    { id: "g6s2_decimal_div_remainder_quantity", label: "일정한 양씩 나누고 남는 양", semester: 2 }
+                ]
+            },
+            {
+                id: "pattern",
+                label: "변화와 관계",
+                subjects: [
+                    // 6학년 1학기 - 비와 비율
+                    { id: "g6s1_ratio_notation", label: "두 수를 비로 나타내기", semester: 1 },
+                    { id: "g6s1_rate_as_fraction", label: "비율을 분수로 나타내기", semester: 1 },
+                    { id: "g6s1_rate_as_decimal", label: "비율을 소수로 나타내기", semester: 1 },
+                    { id: "g6s1_rate_as_percent", label: "비율을 백분율로 나타내기", semester: 1 },
+                    { id: "g6s1_find_comparison_quantity", label: "기준량과 비율로 비교하는 양 구하기", semester: 1 },
+                    { id: "g6s1_find_base_quantity", label: "비교하는 양과 비율로 기준량 구하기", semester: 1 },
+                    { id: "g6s1_part_whole_percent", label: "전체와 부분을 이용한 백분율", semester: 1 },
+                    // 6학년 2학기 - 비례식과 비례배분
+                    { id: "g6s2_ratio_simplify_natural", label: "비를 간단한 자연수의 비로 나타내기", semester: 2 },
+                    { id: "g6s2_ratio_decimal_to_natural", label: "소수의 비를 자연수의 비로 나타내기", semester: 2 },
+                    { id: "g6s2_ratio_fraction_to_natural", label: "분수의 비를 자연수의 비로 나타내기", semester: 2 },
+                    { id: "g6s2_equivalent_ratio_blank", label: "같은 비의 빈칸", semester: 2 },
+                    { id: "g6s2_proportion_blank", label: "비례식의 빈칸", semester: 2 },
+                    { id: "g6s2_proportion_application", label: "비례 관계의 값 구하기", semester: 2 },
+                    { id: "g6s2_proportional_distribution", label: "비례배분", semester: 2 }
+                ]
+            },
+            {
+                id: "data",
+                label: "자료와 가능성",
+                subjects: [
+                    // 6학년 1학기 - 여러 가지 그래프
+                    { id: "g6s1_graph_category_percent", label: "전체 자료에서 항목의 백분율 구하기", semester: 1 },
+                    { id: "g6s1_graph_category_count", label: "전체 수와 백분율로 항목 수 구하기", semester: 1 },
+                    { id: "g6s1_graph_missing_percent", label: "여러 항목의 빠진 백분율", semester: 1 },
+                    { id: "g6s1_graph_largest_smallest", label: "백분율이 가장 큰 항목 또는 작은 항목", semester: 1 },
+                    { id: "g6s1_graph_percent_difference", label: "두 항목의 백분율 차", semester: 1 }
+                ]
+            },
+            {
+                id: "shape_measure",
+                label: "도형과 측정",
+                subjects: [
+                    // 6학년 1학기 - 각기둥과 각뿔
+                    { id: "g6s1_prism_name", label: "밑면을 보고 각기둥 이름 찾기", semester: 1 },
+                    { id: "g6s1_prism_component_count", label: "각기둥의 면·모서리·꼭짓점 수", semester: 1 },
+                    { id: "g6s1_prism_lateral_face_count", label: "각기둥의 옆면 수", semester: 1 },
+                    { id: "g6s1_pyramid_name", label: "밑면을 보고 각뿔 이름 찾기", semester: 1 },
+                    { id: "g6s1_pyramid_component_count", label: "각뿔의 면·모서리·꼭짓점 수", semester: 1 },
+                    { id: "g6s1_solid_base_polygon_from_count", label: "각기둥·각뿔의 구성 요소 역산", semester: 1 },
+                    // 6학년 1학기 - 직육면체의 겉넓이와 부피
+                    { id: "g6s1_cuboid_surface_area", label: "직육면체의 겉넓이", semester: 1 },
+                    { id: "g6s1_cube_surface_area", label: "정육면체의 겉넓이", semester: 1 },
+                    { id: "g6s1_cuboid_missing_dimension_surface", label: "겉넓이로 직육면체의 한 변 구하기", semester: 1 },
+                    { id: "g6s1_cuboid_volume", label: "직육면체의 부피", semester: 1 },
+                    { id: "g6s1_cube_volume", label: "정육면체의 부피", semester: 1 },
+                    { id: "g6s1_cuboid_missing_dimension_volume", label: "부피로 직육면체의 한 변 구하기", semester: 1 },
+                    { id: "g6s1_cuboid_volume_compare", label: "두 직육면체의 부피 비교", semester: 1 },
+                    // 6학년 2학기 - 공간과 입체
+                    { id: "g6s2_cube_layers_total", label: "층별 쌓기나무 수의 합", semester: 2 },
+                    { id: "g6s2_cube_column_heights_total", label: "위에서 본 각 칸의 높이로 전체 개수 구하기", semester: 2 },
+                    { id: "g6s2_cube_missing_column_height", label: "전체 개수로 빠진 칸의 높이 구하기", semester: 2 },
+                    // 6학년 2학기 - 원의 둘레와 넓이
+                    { id: "g6s2_circle_circumference_diameter", label: "지름으로 원주 구하기", semester: 2 },
+                    { id: "g6s2_circle_circumference_radius", label: "반지름으로 원주 구하기", semester: 2 },
+                    { id: "g6s2_circle_diameter_from_circumference", label: "원주로 지름 구하기", semester: 2 },
+                    { id: "g6s2_circle_radius_from_circumference", label: "원주로 반지름 구하기", semester: 2 },
+                    { id: "g6s2_circle_area_radius", label: "반지름으로 원의 넓이 구하기", semester: 2 },
+                    { id: "g6s2_circle_area_diameter", label: "지름으로 원의 넓이 구하기", semester: 2 },
+                    { id: "g6s2_circle_radius_from_area", label: "원의 넓이로 반지름 구하기", semester: 2 },
+                    { id: "g6s2_semicircle_perimeter", label: "반원의 둘레", semester: 2 },
+                    // 6학년 2학기 - 원기둥, 원뿔, 구
+                    { id: "g6s2_round_solid_name", label: "성질을 보고 입체도형 이름 찾기", semester: 2 },
+                    { id: "g6s2_cylinder_component_count", label: "원기둥의 구성 요소 수", semester: 2 },
+                    { id: "g6s2_cone_component_count", label: "원뿔의 구성 요소 수", semester: 2 },
+                    { id: "g6s2_sphere_component_count", label: "구의 구성 요소 수", semester: 2 },
+                    { id: "g6s2_cylinder_base_property", label: "원기둥의 두 밑면의 성질", semester: 2 },
+                    { id: "g6s2_round_solid_property_check", label: "입체도형의 성질 판단", semester: 2 }
                 ]
             }
         ]

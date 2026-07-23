@@ -272,6 +272,118 @@ function multiplyScaledDecimals(scaledA, decimalsA, scaledB, decimalsB) {
     return { scaledProduct: scaledA * scaledB, decimals: decimalsA + decimalsB };
 }
 
+/* ===== 분수 나눗셈 공용 함수 (6학년) ===== */
+
+/**
+ * 자연수부(whole)+분수부(numerator/denominator)로 표현된 두 수를 나눈다.
+ * "나누는 수의 역수를 곱한다"는 원리를 그대로 이용해 기존 multiplyMixedFractions를 재사용한다.
+ * @returns {{whole:number, numerator:number, denominator:number}}
+ */
+function divideFractions(w1, n1, d1, w2, n2, d2) {
+    const divisorNumerator = w2 * d2 + n2; // 나누는 수의 가분수 분자 (0이 되지 않도록 호출부에서 보장)
+    // 나누는 수의 역수는 분모(d2) / 가분수 분자(divisorNumerator) 이므로
+    // whole=0, numerator=d2, denominator=divisorNumerator 형태로 곱셈에 대입한다.
+    return multiplyMixedFractions(w1, n1, d1, 0, d2, divisorNumerator);
+}
+
+/* ===== 소수 나눗셈 공용 함수 (6학년) ===== */
+
+/**
+ * 정수로 스케일된 두 소수를 나눈 몫을 정확한 소수 문자열로 반환한다. (유한소수가 아니면 null)
+ * value = (dividendScaled/10^dividendDecimals) ÷ (divisorScaled/10^divisorDecimals)
+ * 정수 분수(numerator/denominator)로 변환한 뒤 분모가 2와 5로만 이루어지는지(유한소수 조건)를 검사한다.
+ */
+function divideScaledDecimals(dividendScaled, dividendDecimals, divisorScaled, divisorDecimals) {
+    let numerator = dividendScaled * Math.pow(10, divisorDecimals);
+    let denominator = divisorScaled * Math.pow(10, dividendDecimals);
+    const g = gcd(numerator, denominator);
+    numerator /= g; denominator /= g;
+
+    let count2 = 0, count5 = 0, temp = denominator;
+    while (temp % 2 === 0) { temp /= 2; count2++; }
+    while (temp % 5 === 0) { temp /= 5; count5++; }
+    if (temp !== 1) return null; // 2, 5 이외의 소인수가 남으면 무한소수
+
+    const k = Math.max(count2, count5);
+    const scaledResult = (numerator * Math.pow(10, k)) / denominator;
+    return formatScaledDecimal(scaledResult, k);
+}
+
+/**
+ * 분수(numerator/denominator, 분모>0) 값을 소수 places자리까지 반올림한 소수 문자열로 반환한다.
+ * 부동소수점 나눗셈을 직접 사용하지 않고 정수 연산(몫과 나머지)만 사용한다.
+ */
+function roundRationalHalfUp(numerator, denominator, places) {
+    const scale = Math.pow(10, places);
+    const scaledNumerator = numerator * scale;
+    const quotient = Math.floor(scaledNumerator / denominator);
+    const remainder = scaledNumerator - quotient * denominator;
+    const roundedScaled = remainder * 2 >= denominator ? quotient + 1 : quotient;
+    return formatScaledDecimal(roundedScaled, places);
+}
+
+/* ===== 비의 단순화 공용 함수 (6학년) ===== */
+
+/** 자연수 두 개로 이루어진 비를 최대공약수로 나누어 가장 간단한 자연수의 비로 만든다. */
+function simplifyRatio(a, b) {
+    const g = gcd(a, b);
+    return { a: a / g, b: b / g };
+}
+
+/* ===== 원의 둘레·넓이 공용 함수 (6학년 2학기) - 원주율 314/100(3.14) 정수 스케일 ===== */
+
+const PI_SCALED = 314; // 3.14 = 314/100
+
+/**
+ * 원주율 3.14(314/100)를 이용해 원의 원주 또는 넓이를 계산한다. (정수 스케일 연산만 사용)
+ * @param {'circumference'|'area'} type - circumference면 value를 지름으로, area면 value를 반지름으로 취급
+ * @returns {string} 소수점 아래 불필요한 0이 제거된 소수 문자열
+ */
+function calculateCircleValue(type, value) {
+    const scaled = type === "circumference" ? value * PI_SCALED : value * value * PI_SCALED;
+    return formatScaledDecimal(scaled, 2);
+}
+
+/* ===== 각기둥·각뿔 구성 요소 공용 함수 (6학년 1학기) ===== */
+
+/** 밑면이 n각형인 각기둥의 면·모서리·꼭짓점·옆면 개수를 구한다. */
+function prismComponentCounts(n) {
+    return { faces: n + 2, edges: 3 * n, vertices: 2 * n, lateralFaces: n };
+}
+
+/** 밑면이 n각형인 각뿔의 면·모서리·꼭짓점·옆면 개수를 구한다. */
+function pyramidComponentCounts(n) {
+    return { faces: n + 1, edges: 2 * n, vertices: n + 1, lateralFaces: n };
+}
+
+/** n(3~8)에 해당하는 "삼/사/오/육/칠/팔" 접두어 (각기둥·각뿔·각형 이름 조합용) */
+const POLYGON_PREFIX_BY_N = { 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔" };
+
+/* ===== 원기둥·원뿔·구 성질 데이터 공용 관리 (6학년 2학기) ===== */
+
+const ROUND_SOLID_FACTS = {
+    "원기둥": { flatFaces: 2, curvedFaces: 1, edges: 2, vertices: 0 },
+    "원뿔": { flatFaces: 1, curvedFaces: 1, edges: 1, vertices: 1 },
+    "구": { flatFaces: 0, curvedFaces: 1, edges: 0, vertices: 0 }
+};
+
+/** 지정한 원기둥·원뿔·구의 구성 요소(평평한 면/굽은 면/모서리/꼭짓점) 중 하나를 무작위로 묻는 문제를 만든다. */
+function roundSolidComponentQuestion(solidName) {
+    const facts = ROUND_SOLID_FACTS[solidName];
+    const parts = [
+        { word: "평평한 면", value: facts.flatFaces },
+        { word: "굽은 면", value: facts.curvedFaces },
+        { word: "모서리", value: facts.edges },
+        { word: "꼭짓점", value: facts.vertices }
+    ];
+    const pick = parts[randInt(0, parts.length - 1)];
+    const formula = `${solidName}의 ${pick.word}은 몇 개인가?`;
+    return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
+}
+
+/* ===== cm³ 표시 헬퍼 (6학년 1학기) ===== */
+function formatCm3(value) { return `${value}cm\u00B3`; }
+
 const problemGenerators = {
     add1() {
         const n1 = Math.floor(Math.random() * 9) + 1;
@@ -2234,6 +2346,983 @@ const problemGenerators = {
             answer = countA > countB ? `${colorA} 공` : `${colorB} 공`;
         }
         return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 6학년 1학기 - 분수의 나눗셈 ===== */
+
+    // ① 자연수 ÷ 자연수 (몫이 1보다 작음)
+    g6s1_natural_div_natural_proper() {
+        const divisor = randInt(2, 30);
+        const dividend = randInt(1, divisor - 1);
+        const simplified = simplifyFraction(dividend, divisor);
+        const formula = `${dividend} ÷ ${divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(0, simplified.numerator, simplified.denominator) };
+    },
+
+    // ② 자연수 ÷ 자연수 (몫이 1보다 큼, 나누어떨어짐과 대분수 결과 모두 생성)
+    g6s1_natural_div_natural_mixed() {
+        const divisor = randInt(2, 12);
+        const dividend = randInt(divisor + 1, divisor * 6);
+        const simplified = simplifyFraction(dividend, divisor);
+        const norm = normalizeMixedNumber(0, simplified.numerator, simplified.denominator);
+        const formula = `${dividend} ÷ ${divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(norm.whole, norm.numerator, simplified.denominator) };
+    },
+
+    // ③ 진분수 ÷ 자연수
+    g6s1_proper_fraction_div_natural() {
+        const d = randInt(2, 15);
+        const n = randInt(1, d - 1);
+        const natural = randInt(2, 12);
+        const result = divideFractions(0, n, d, natural, 0, 1);
+        const formula = `${makeFractionHTML(n, d)} ÷ ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ④ 가분수 ÷ 자연수 (결과가 진분수·자연수·대분수 모두 나올 수 있음)
+    g6s1_improper_fraction_div_natural() {
+        const d = randInt(2, 12);
+        const n = randInt(d + 1, d * 4);
+        const natural = randInt(2, 10);
+        const result = divideFractions(0, n, d, natural, 0, 1);
+        const formula = `${makeFractionHTML(n, d)} ÷ ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑤ 대분수 ÷ 자연수
+    g6s1_mixed_fraction_div_natural() {
+        const d = randInt(2, 12);
+        const whole = randInt(1, 6);
+        const n = randInt(1, d - 1);
+        const natural = randInt(2, 10);
+        const result = divideFractions(whole, n, d, natural, 0, 1);
+        const formula = `${formatMixedNumber(whole, n, d)} ÷ ${natural}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    /* ===== 6학년 1학기 - 각기둥과 각뿔 (그림·전개도 없이 텍스트로 판단) ===== */
+
+    // ⑥ 밑면을 보고 각기둥 이름 찾기
+    g6s1_prism_name() {
+        const n = randInt(3, 8);
+        const baseName = POLYGON_NAMES[n - 3];
+        const formula = `밑면이 ${baseName}인 각기둥`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${POLYGON_PREFIX_BY_N[n]}각기둥` };
+    },
+
+    // ⑦ 각기둥의 면·모서리·꼭짓점 수
+    g6s1_prism_component_count() {
+        const n = randInt(3, 8);
+        const counts = prismComponentCounts(n);
+        const parts = [
+            { word: "면", value: counts.faces },
+            { word: "모서리", value: counts.edges },
+            { word: "꼭짓점", value: counts.vertices }
+        ];
+        const pick = parts[randInt(0, parts.length - 1)];
+        const name = `${POLYGON_PREFIX_BY_N[n]}각기둥`;
+        const formula = `${name}의 ${pick.word}은 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
+    },
+
+    // ⑧ 각기둥의 옆면 수
+    g6s1_prism_lateral_face_count() {
+        const n = randInt(3, 8);
+        const name = `${POLYGON_PREFIX_BY_N[n]}각기둥`;
+        const formula = `${name}의 옆면은 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${n}개` };
+    },
+
+    // ⑨ 밑면을 보고 각뿔 이름 찾기
+    g6s1_pyramid_name() {
+        const n = randInt(3, 8);
+        const baseName = POLYGON_NAMES[n - 3];
+        const formula = `밑면이 ${baseName}인 각뿔`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${POLYGON_PREFIX_BY_N[n]}각뿔` };
+    },
+
+    // ⑩ 각뿔의 면·모서리·꼭짓점 수
+    g6s1_pyramid_component_count() {
+        const n = randInt(3, 8);
+        const counts = pyramidComponentCounts(n);
+        const parts = [
+            { word: "면", value: counts.faces },
+            { word: "모서리", value: counts.edges },
+            { word: "꼭짓점", value: counts.vertices }
+        ];
+        const pick = parts[randInt(0, parts.length - 1)];
+        const name = `${POLYGON_PREFIX_BY_N[n]}각뿔`;
+        const formula = `${name}의 ${pick.word}은 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${pick.value}개` };
+    },
+
+    // ⑪ 각기둥·각뿔의 구성 요소 역산 (입체 종류를 명시해 답이 하나로 정해지게 함)
+    g6s1_solid_base_polygon_from_count() {
+        const isPrism = Math.random() < 0.5;
+        const n = randInt(3, 8);
+        const counts = isPrism ? prismComponentCounts(n) : pyramidComponentCounts(n);
+        const solidWord = isPrism ? "각기둥" : "각뿔";
+        const parts = [
+            { word: "면", value: counts.faces },
+            { word: "모서리", value: counts.edges },
+            { word: "꼭짓점", value: counts.vertices }
+        ];
+        const pick = parts[randInt(0, parts.length - 1)];
+        const askName = Math.random() < 0.5;
+        const baseName = POLYGON_NAMES[n - 3];
+        const formula = askName
+            ? `어떤 ${solidWord}의 ${pick.word}이 ${pick.value}개일 때 이 입체도형의 이름`
+            : `어떤 ${solidWord}의 ${pick.word}이 ${pick.value}개일 때 밑면은 몇각형인가?`;
+        const answer = askName ? `${POLYGON_PREFIX_BY_N[n]}${solidWord}` : baseName;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 6학년 1학기 - 소수의 나눗셈 (몫을 먼저 정하고 피제수를 역산) ===== */
+
+    // ⑫ 소수 한 자리 수 ÷ 자연수
+    g6s1_decimal_1_div_natural() {
+        const result = generateUntilValid(
+            () => {
+                const divisor = randInt(2, 12);
+                const quotientScaled = randDecimalScaled(1, 99);
+                const dividendScaled = quotientScaled * divisor;
+                return { divisor, quotientScaled, dividendScaled };
+            },
+            (v) => v.dividendScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 1)} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(result.quotientScaled, 1) };
+    },
+
+    // ⑬ 소수 두 자리 수 ÷ 자연수
+    g6s1_decimal_2_div_natural() {
+        const result = generateUntilValid(
+            () => {
+                const divisor = randInt(2, 12);
+                const quotientScaled = randDecimalScaled(1, 999);
+                const dividendScaled = quotientScaled * divisor;
+                return { divisor, quotientScaled, dividendScaled };
+            },
+            (v) => v.dividendScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 2)} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(result.quotientScaled, 2) };
+    },
+
+    // ⑭ 몫이 1보다 작은 소수 ÷ 자연수
+    g6s1_decimal_div_natural_under_1() {
+        const result = generateUntilValid(
+            () => {
+                const divisor = randInt(2, 12);
+                const quotientScaled = randInt(1, 99); // 소수 둘째 자리 스케일, 항상 1 미만(0.01~0.99)
+                const dividendScaled = quotientScaled * divisor;
+                return { divisor, quotientScaled, dividendScaled };
+            },
+            (v) => v.dividendScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 2)} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(result.quotientScaled, 2) };
+    },
+
+    // ⑮ 몫의 소수 첫째 자리에 0이 있는 나눗셈
+    g6s1_decimal_div_zero_tenths() {
+        const result = generateUntilValid(
+            () => {
+                const divisor = randInt(2, 9);
+                const wholePart = randInt(0, 5);
+                const hundredths = randInt(1, 9); // 1~9 (0이면 소수 둘째 자리도 0이 되어버림)
+                const quotientScaled = wholePart * 100 + hundredths; // 소수 첫째 자리 = 0, 둘째 자리 = hundredths
+                const dividendScaled = quotientScaled * divisor;
+                return { divisor, quotientScaled, dividendScaled };
+            },
+            (v) => v.dividendScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 2)} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(result.quotientScaled, 2) };
+    },
+
+    // ⑯ 소수점 아래 0을 내려 계산하는 나눗셈 (표시된 피제수 자릿수로는 나누어떨어지지 않아 한 자리를 더 내려야 함)
+    g6s1_decimal_div_append_zero() {
+        const result = generateUntilValid(
+            () => {
+                const dDecimals = Math.random() < 0.5 ? 1 : 2;
+                const divisor = randInt(2, 9);
+                const dividendScaled = dDecimals === 1 ? randDecimalScaled(1, 99) : randDecimalScaled(1, 999);
+                const needsAppend = dividendScaled % divisor !== 0;
+                const appendedDivisible = (dividendScaled * 10) % divisor === 0;
+                return { dDecimals, divisor, dividendScaled, needsAppend, appendedDivisible };
+            },
+            (v) => v.needsAppend && v.appendedDivisible
+        );
+        const quotientScaled = (result.dividendScaled * 10) / result.divisor;
+        const quotientDecimals = result.dDecimals + 1;
+        const formula = `${formatScaledDecimal(result.dividendScaled, result.dDecimals)} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(quotientScaled, quotientDecimals) };
+    },
+
+    // ⑰ 자연수 ÷ 자연수의 몫을 소수로 나타내기 (유한소수가 되는 조합만 채택, 소수 둘째 자리까지로 제한)
+    g6s1_natural_div_natural_decimal() {
+        const result = generateUntilValid(
+            () => {
+                const divisor = randInt(2, 20);
+                const dividend = randInt(1, 200);
+                const quotientStr = divideScaledDecimals(dividend, 0, divisor, 0);
+                return { divisor, dividend, quotientStr };
+            },
+            (v) => v.quotientStr !== null && /^\d+(\.\d{1,2})?$/.test(v.quotientStr)
+        );
+        const formula = `${result.dividend} ÷ ${result.divisor}`;
+        return { formulaFront: formula, formulaBack: formula, answer: result.quotientStr };
+    },
+
+    /* ===== 6학년 1학기 - 비와 비율 ===== */
+
+    // ⑱ 두 수를 비로 나타내기
+    g6s1_ratio_notation() {
+        const items = ["사과", "배", "귤", "포도", "구슬"];
+        const idxA = randInt(0, items.length - 1);
+        let idxB = randInt(0, items.length - 1);
+        while (idxB === idxA) idxB = randInt(0, items.length - 1);
+        const nameA = items[idxA];
+        const nameB = items[idxB];
+        const itemA = randInt(2, 30);
+        const itemB = randInt(2, 30);
+        const formula = `${nameA} ${itemA}개와 ${nameB} ${itemB}개의 수의 비를 ${nameA} 수와 ${nameB} 수의 비로 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${itemA} : ${itemB}` };
+    },
+
+    // ⑲ 비율을 분수로 나타내기 (비교하는 양 ÷ 기준량, 기약분수)
+    g6s1_rate_as_fraction() {
+        const base = randInt(2, 20);
+        const compare = randInt(1, base * 2);
+        const simplified = simplifyFraction(compare, base);
+        const formula = `${compare} : ${base}의 비율을 분수로 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: makeFractionHTML(simplified.numerator, simplified.denominator) };
+    },
+
+    // ⑳ 비율을 소수로 나타내기 (유한소수가 되는 조합만 생성)
+    g6s1_rate_as_decimal() {
+        const result = generateUntilValid(
+            () => {
+                const base = randInt(2, 50);
+                const compare = randInt(1, base * 2);
+                const decimalStr = divideScaledDecimals(compare, 0, base, 0);
+                return { base, compare, decimalStr };
+            },
+            (v) => v.decimalStr !== null
+        );
+        const formula = `${result.compare} : ${result.base}의 비율을 소수로 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: result.decimalStr };
+    },
+
+    // ㉑ 비율을 백분율로 나타내기 (정수 또는 소수 한 자리 백분율만 허용)
+    g6s1_rate_as_percent() {
+        const result = generateUntilValid(
+            () => {
+                const base = randInt(2, 50);
+                const compare = randInt(0, base); // 0~100% 범위가 기본이 되도록 함
+                const percentStr = divideScaledDecimals(compare * 100, 0, base, 0);
+                return { base, compare, percentStr };
+            },
+            (v) => v.percentStr !== null && /^\d+(\.\d)?$/.test(v.percentStr)
+        );
+        const formula = `${result.compare} : ${result.base}의 비율을 백분율로 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${result.percentStr}%` };
+    },
+
+    // ㉒ 기준량과 비율로 비교하는 양 구하기 (비율을 먼저 정하고 나누어떨어지는 기준량을 역산해 구성)
+    g6s1_find_comparison_quantity() {
+        const percent = randInt(1, 100);
+        const g = gcd(percent, 100);
+        const requiredMultiple = 100 / g; // 이 배수여야 기준량 × 비율이 100으로 나누어떨어짐
+        const maxMultiplier = Math.max(1, Math.floor(200 / requiredMultiple));
+        const multiplier = randInt(1, maxMultiplier);
+        const base = requiredMultiple * multiplier;
+        const compare = (base * percent) / 100;
+        const formula = `기준량이 ${base}이고 비율이 ${percent}%일 때 비교하는 양`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(compare) };
+    },
+
+    // ㉓ 비교하는 양과 비율로 기준량 구하기 (같은 방식으로 나누어떨어지는 조합을 구성)
+    g6s1_find_base_quantity() {
+        const percent = randInt(1, 100);
+        const g = gcd(percent, 100);
+        const requiredMultiple = 100 / g;
+        const maxMultiplier = Math.max(1, Math.floor(200 / requiredMultiple));
+        const multiplier = randInt(1, maxMultiplier);
+        const base = requiredMultiple * multiplier;
+        const compare = (base * percent) / 100;
+        const formula = `비교하는 양이 ${compare}이고 비율이 ${percent}%일 때 기준량`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(base) };
+    },
+
+    // ㉔ 전체와 부분을 이용한 백분율 (부분은 전체 이하, 백분율을 먼저 정해 나누어떨어지는 전체를 역산)
+    g6s1_part_whole_percent() {
+        const percent = randInt(0, 100);
+        const g = gcd(percent, 100);
+        const requiredMultiple = 100 / g;
+        const maxMultiplier = Math.max(1, Math.floor(200 / requiredMultiple));
+        const multiplier = randInt(1, maxMultiplier);
+        const whole = requiredMultiple * multiplier;
+        const part = (whole * percent) / 100;
+        const formula = `전체 ${whole} 중 ${part}의 백분율`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${percent}%` };
+    },
+
+    /* ===== 6학년 1학기 - 여러 가지 그래프 (수치 관계만 카드로 출제) ===== */
+
+    // ㉕ 전체 자료에서 항목의 백분율 구하기 (백분율을 먼저 정해 나누어떨어지는 전체 인원을 역산)
+    g6s1_graph_category_percent() {
+        const percent = randInt(1, 99);
+        const g = gcd(percent, 100);
+        const requiredMultiple = 100 / g;
+        const minMultiplier = Math.max(1, Math.ceil(20 / requiredMultiple));
+        const maxMultiplier = Math.max(minMultiplier, Math.floor(500 / requiredMultiple));
+        const multiplier = randInt(minMultiplier, maxMultiplier);
+        const total = requiredMultiple * multiplier;
+        const count = (total * percent) / 100;
+        const label = ["A", "B", "C", "D"][randInt(0, 3)];
+        const formula = `전체 ${total}명 중 ${count}명이 ${label}를 선택했다. ${label}의 비율`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${percent}%` };
+    },
+
+    // ㉖ 전체 수와 백분율로 항목 수 구하기 (답이 자연수, 같은 방식으로 역산해 구성)
+    g6s1_graph_category_count() {
+        const percent = randInt(1, 99);
+        const g = gcd(percent, 100);
+        const requiredMultiple = 100 / g;
+        const minMultiplier = Math.max(1, Math.ceil(20 / requiredMultiple));
+        const maxMultiplier = Math.max(minMultiplier, Math.floor(500 / requiredMultiple));
+        const multiplier = randInt(minMultiplier, maxMultiplier);
+        const total = requiredMultiple * multiplier;
+        const count = (total * percent) / 100;
+        const label = ["A", "B", "C", "D"][randInt(0, 3)];
+        const formula = `전체 ${total}명 중 ${percent}%가 ${label}를 선택했을 때 ${label}를 선택한 사람 수`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${count}명` };
+    },
+
+    // ㉗ 여러 항목의 빠진 백분율 (합계는 항상 100%)
+    g6s1_graph_missing_percent() {
+        const itemCount = randInt(3, 5);
+        const labels = ["A", "B", "C", "D", "E"].slice(0, itemCount);
+        const percents = generateUntilValid(
+            () => {
+                const arr = [];
+                let remaining = 100;
+                for (let i = 0; i < itemCount - 1; i++) {
+                    const maxForThis = remaining - (itemCount - 1 - i);
+                    const value = randInt(1, Math.max(1, maxForThis - 1));
+                    arr.push(value);
+                    remaining -= value;
+                }
+                arr.push(remaining);
+                return arr;
+            },
+            (arr) => arr.every((v) => v >= 1)
+        );
+        const blankIdx = randInt(0, itemCount - 1);
+        const missingValue = percents[blankIdx];
+        const display = labels.map((label, idx) => `${label} ${idx === blankIdx ? "?" : percents[idx] + "%"}`).join(", ");
+        return { formulaFront: display, formulaBack: display, answer: `${missingValue}%` };
+    },
+
+    // ㉘ 백분율이 가장 큰 항목 또는 작은 항목 (서로 다른 값만 사용해 답을 하나로 고정)
+    g6s1_graph_largest_smallest() {
+        const itemCount = randInt(3, 5);
+        const labels = ["A", "B", "C", "D", "E"].slice(0, itemCount);
+        const percents = generateUntilValid(
+            () => {
+                const values = new Set();
+                while (values.size < itemCount) values.add(randInt(5, 40));
+                return [...values];
+            },
+            (arr) => new Set(arr).size === arr.length
+        );
+        const askLargest = Math.random() < 0.5;
+        const targetVal = askLargest ? Math.max(...percents) : Math.min(...percents);
+        const targetIdx = percents.indexOf(targetVal);
+        const display = labels.map((label, idx) => `${label} ${percents[idx]}%`).join(", ");
+        const question = askLargest ? "비율이 가장 큰 항목" : "비율이 가장 작은 항목";
+        const formula = `${display} 중 ${question}`;
+        return { formulaFront: formula, formulaBack: formula, answer: labels[targetIdx] };
+    },
+
+    // ㉙ 두 항목의 백분율 차
+    g6s1_graph_percent_difference() {
+        const percentA = randInt(5, 60);
+        const percentB = generateUntilValid(() => randInt(5, 60), (v) => v !== percentA);
+        const formula = `A ${percentA}%, B ${percentB}%일 때 두 항목의 백분율 차`;
+        const diff = Math.abs(percentA - percentB);
+        return { formulaFront: formula, formulaBack: formula, answer: `${diff}%` };
+    },
+
+    /* ===== 6학년 1학기 - 직육면체의 겉넓이와 부피 ===== */
+
+    // ㉚ 직육면체의 겉넓이
+    g6s1_cuboid_surface_area() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const height = randInt(2, 30);
+        const surfaceArea = 2 * (w * h + h * height + w * height);
+        const formula = `가로 ${w}cm, 세로 ${h}cm, 높이 ${height}cm인 직육면체의 겉넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(surfaceArea) };
+    },
+
+    // ㉛ 정육면체의 겉넓이
+    g6s1_cube_surface_area() {
+        const side = randInt(2, 30);
+        const surfaceArea = 6 * side * side;
+        const formula = `한 변이 ${side}cm인 정육면체의 겉넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(surfaceArea) };
+    },
+
+    // ㉜ 겉넓이로 직육면체의 한 변 구하기 (세 변을 먼저 만든 뒤 겉넓이를 계산해 출제)
+    g6s1_cuboid_missing_dimension_surface() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const height = randInt(2, 30);
+        const surfaceArea = 2 * (w * h + h * height + w * height);
+        const formula = `가로 ${w}cm, 세로 ${h}cm인 직육면체의 겉넓이가 ${surfaceArea}cm\u00B2일 때 높이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm(height) };
+    },
+
+    // ㉝ 직육면체의 부피
+    g6s1_cuboid_volume() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const height = randInt(2, 30);
+        const formula = `가로 ${w}cm, 세로 ${h}cm, 높이 ${height}cm인 직육면체의 부피`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm3(w * h * height) };
+    },
+
+    // ㉞ 정육면체의 부피
+    g6s1_cube_volume() {
+        const side = randInt(2, 30);
+        const formula = `한 변이 ${side}cm인 정육면체의 부피`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm3(side * side * side) };
+    },
+
+    // ㉟ 부피로 직육면체의 한 변 구하기 (두 변과 부피를 제시, 답이 자연수가 되게 역산)
+    g6s1_cuboid_missing_dimension_volume() {
+        const w = randInt(2, 30);
+        const h = randInt(2, 30);
+        const height = randInt(2, 30);
+        const volume = w * h * height;
+        const formula = `가로 ${w}cm, 세로 ${h}cm인 직육면체의 부피가 ${volume}cm\u00B3일 때 높이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm(height) };
+    },
+
+    // ㊱ 두 직육면체의 부피 비교 (같은 부피인 사례도 일정 비율로 생성)
+    g6s1_cuboid_volume_compare() {
+        const dims1 = { w: randInt(2, 20), h: randInt(2, 20), d: randInt(2, 20) };
+        const wantEqual = Math.random() < 0.25;
+        let dims2;
+        if (wantEqual) {
+            // 세 변의 순서만 바꾸어도 부피가 같다는 성질을 이용
+            dims2 = { w: dims1.h, h: dims1.d, d: dims1.w };
+        } else {
+            dims2 = generateUntilValid(
+                () => ({ w: randInt(2, 20), h: randInt(2, 20), d: randInt(2, 20) }),
+                (v) => v.w * v.h * v.d !== dims1.w * dims1.h * dims1.d
+            );
+        }
+        const volume1 = dims1.w * dims1.h * dims1.d;
+        const volume2 = dims2.w * dims2.h * dims2.d;
+        const formula = `가로 ${dims1.w}cm, 세로 ${dims1.h}cm, 높이 ${dims1.d}cm인 직육면체 A와 가로 ${dims2.w}cm, 세로 ${dims2.h}cm, 높이 ${dims2.d}cm인 직육면체 B의 부피 비교 (A ○ B)`;
+        let answer;
+        if (volume1 > volume2) answer = ">";
+        else if (volume1 < volume2) answer = "<";
+        else answer = "=";
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 6학년 2학기 - 분수의 나눗셈 ===== */
+
+    // ① 분모가 같고 나누어떨어지는 분수 ÷ 분수
+    g6s2_same_den_fraction_div_exact() {
+        const result = generateUntilValid(
+            () => {
+                const d = randInt(4, 15);
+                const divisorNum = randInt(1, Math.floor((d - 1) / 2));
+                const maxK = Math.floor((d - 1) / divisorNum);
+                const k = randInt(1, maxK);
+                const dividendNum = divisorNum * k;
+                return { d, divisorNum, dividendNum, k };
+            },
+            (v) => v.dividendNum >= 1 && v.dividendNum <= v.d - 1
+        );
+        const formula = `${makeFractionHTML(result.dividendNum, result.d)} ÷ ${makeFractionHTML(result.divisorNum, result.d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(result.k) };
+    },
+
+    // ② 분모가 같고 나누어떨어지지 않는 분수 ÷ 분수
+    g6s2_same_den_fraction_div_nonexact() {
+        const result = generateUntilValid(
+            () => {
+                const d = randInt(4, 15);
+                const dividendNum = randInt(1, d - 1);
+                const divisorNum = randInt(1, d - 1);
+                return { d, dividendNum, divisorNum };
+            },
+            (v) => v.dividendNum % v.divisorNum !== 0
+        );
+        const computed = divideFractions(0, result.dividendNum, result.d, 0, result.divisorNum, result.d);
+        const formula = `${makeFractionHTML(result.dividendNum, result.d)} ÷ ${makeFractionHTML(result.divisorNum, result.d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(computed.whole, computed.numerator, computed.denominator) };
+    },
+
+    // ③ 분모가 다른 진분수 ÷ 진분수
+    g6s2_unlike_fraction_div() {
+        const d1 = randInt(2, 15);
+        const d2 = generateUntilValid(() => randInt(2, 15), (v) => v !== d1);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+        const result = divideFractions(0, n1, d1, 0, n2, d2);
+        const formula = `${makeFractionHTML(n1, d1)} ÷ ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ④ 자연수 ÷ 단위분수
+    g6s2_natural_div_unit_fraction() {
+        const natural = randInt(2, 12);
+        const d = randInt(2, 12);
+        const result = divideFractions(natural, 0, 1, 0, 1, d);
+        const formula = `${natural} ÷ ${makeFractionHTML(1, d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑤ 자연수 ÷ 진분수
+    g6s2_natural_div_fraction() {
+        const natural = randInt(2, 12);
+        const d = randInt(2, 15);
+        const n = randInt(1, d - 1);
+        const result = divideFractions(natural, 0, 1, 0, n, d);
+        const formula = `${natural} ÷ ${makeFractionHTML(n, d)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑥ 진분수 또는 가분수 ÷ 분수
+    g6s2_fraction_div_fraction() {
+        const d1 = randInt(2, 15);
+        const isImproper1 = Math.random() < 0.5;
+        const n1 = isImproper1 ? randInt(d1 + 1, d1 * 3) : randInt(1, d1 - 1);
+        const d2 = randInt(2, 15);
+        const isImproper2 = Math.random() < 0.5;
+        const n2 = isImproper2 ? randInt(d2 + 1, d2 * 3) : randInt(1, d2 - 1);
+        const result = divideFractions(0, n1, d1, 0, n2, d2);
+        const formula = `${makeFractionHTML(n1, d1)} ÷ ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ⑦ 대분수 ÷ 대분수 또는 진분수 (결과가 지나치게 커지지 않도록 제한)
+    g6s2_mixed_fraction_div_fraction() {
+        const result = generateUntilValid(
+            () => {
+                const whole1 = randInt(1, 5);
+                const d1 = randInt(2, 12);
+                const n1 = randInt(1, d1 - 1);
+                const useSecondMixed = Math.random() < 0.5;
+                const whole2 = useSecondMixed ? randInt(1, 5) : 0;
+                const d2 = randInt(2, 12);
+                const n2 = randInt(1, d2 - 1);
+                const dividendValue = whole1 + n1 / d1;
+                const divisorValue = whole2 + n2 / d2;
+                const approxAnswer = dividendValue / divisorValue; // 상한 확인용 근사값(정답 계산에는 사용하지 않음)
+                return { whole1, n1, d1, whole2, n2, d2, approxAnswer };
+            },
+            (v) => v.approxAnswer <= 20
+        );
+        const computed = divideFractions(result.whole1, result.n1, result.d1, result.whole2, result.n2, result.d2);
+        const dividendStr = formatMixedNumber(result.whole1, result.n1, result.d1);
+        const divisorStr = result.whole2 > 0 ? formatMixedNumber(result.whole2, result.n2, result.d2) : makeFractionHTML(result.n2, result.d2);
+        const formula = `${dividendStr} ÷ ${divisorStr}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(computed.whole, computed.numerator, computed.denominator) };
+    },
+
+    /* ===== 6학년 2학기 - 소수의 나눗셈 (몫을 먼저 정하고 피제수를 역산) ===== */
+
+    // ⑧ 소수 한 자리 수 ÷ 소수 한 자리 수 (유한소수가 되는 조합만 채택 - 약 17% 확률로 넉넉히 성립)
+    g6s2_decimal_1_div_decimal_1() {
+        const result = generateUntilValid(
+            () => {
+                const dividendScaled = randDecimalScaled(1, 99);
+                const divisorScaled = randDecimalScaled(1, 99);
+                const quotientStr = divideScaledDecimals(dividendScaled, 1, divisorScaled, 1);
+                return { dividendScaled, divisorScaled, quotientStr };
+            },
+            (v) => v.quotientStr !== null
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 1)} ÷ ${formatScaledDecimal(result.divisorScaled, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: result.quotientStr };
+    },
+
+    // ⑨ 소수 두 자리 수 ÷ 소수 두 자리 수 (유한소수 확률이 낮아(약 3%) 시도 횟수를 늘려 안정적으로 생성)
+    g6s2_decimal_2_div_decimal_2() {
+        const result = generateUntilValid(
+            () => {
+                const dividendScaled = randDecimalScaled(1, 999);
+                const divisorScaled = randDecimalScaled(1, 999);
+                const quotientStr = divideScaledDecimals(dividendScaled, 2, divisorScaled, 2);
+                return { dividendScaled, divisorScaled, quotientStr };
+            },
+            (v) => v.quotientStr !== null,
+            3000
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, 2)} ÷ ${formatScaledDecimal(result.divisorScaled, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: result.quotientStr };
+    },
+
+    // ⑩ 자릿수가 다른 소수 ÷ 소수 (제수 자릿수 + 몫 1자리 = 피제수 자릿수, 항상 서로 다르게 됨)
+    g6s2_decimal_mixed_places_div() {
+        const result = generateUntilValid(
+            () => {
+                const divisorDecimals = Math.random() < 0.5 ? 1 : 2;
+                const divisorMax = divisorDecimals === 1 ? 99 : 999;
+                const divisorScaled = randDecimalScaled(1, divisorMax);
+                const quotientScaled = randDecimalScaled(1, 99); // 몫은 소수 한 자리
+                const dividendDecimals = divisorDecimals + 1;
+                const dividendScaled = quotientScaled * divisorScaled;
+                return { divisorDecimals, divisorScaled, quotientScaled, dividendDecimals, dividendScaled };
+            },
+            (v) => v.dividendScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.dividendScaled, result.dividendDecimals)} ÷ ${formatScaledDecimal(result.divisorScaled, result.divisorDecimals)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(result.quotientScaled, 1) };
+    },
+
+    // ⑪ 자연수 ÷ 소수 (몫이 자연수 또는 유한소수가 되는 조합만 채택)
+    g6s2_natural_div_decimal() {
+        const result = generateUntilValid(
+            () => {
+                const divisorDecimals = Math.random() < 0.5 ? 1 : 2;
+                const divisorMax = divisorDecimals === 1 ? 99 : 999;
+                const divisorScaled = randDecimalScaled(1, divisorMax);
+                const dividend = randInt(1, 200);
+                const quotientStr = divideScaledDecimals(dividend, 0, divisorScaled, divisorDecimals);
+                return { divisorDecimals, divisorScaled, dividend, quotientStr };
+            },
+            (v) => v.quotientStr !== null
+        );
+        const formula = `${result.dividend} ÷ ${formatScaledDecimal(result.divisorScaled, result.divisorDecimals)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: result.quotientStr };
+    },
+
+    // ⑫ 몫을 반올림하여 나타내기 (정수 나눗셈으로만 반올림 계산, 5 이상 올림)
+    g6s2_decimal_quotient_rounding() {
+        const dividend = randInt(1, 50);
+        const divisor = randInt(2, 20);
+        const places = Math.random() < 0.5 ? 1 : 2;
+        const roundedStr = roundRationalHalfUp(dividend, divisor, places);
+        const placeLabel = places === 1 ? "소수 첫째 자리" : "소수 둘째 자리";
+        const formula = `${dividend} ÷ ${divisor}의 몫을 반올림하여 ${placeLabel}까지 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: roundedStr };
+    },
+
+    // ⑬ 일정한 양씩 나누고 남는 양 (정수 스케일로 몫과 나머지 계산, 나머지는 0 이상 제수 미만)
+    g6s2_decimal_div_remainder_quantity() {
+        const units = ["L", "kg", "m"];
+        const unit = units[randInt(0, units.length - 1)];
+        const result = generateUntilValid(
+            () => {
+                const unitScaled = randDecimalScaled(1, 99);
+                const count = randInt(2, 20);
+                const remainderScaled = randInt(0, unitScaled - 1);
+                const totalScaled = unitScaled * count + remainderScaled;
+                return { unitScaled, count, remainderScaled, totalScaled };
+            },
+            (v) => v.totalScaled % 10 !== 0
+        );
+        const formula = `${formatScaledDecimal(result.totalScaled, 1)}${unit}를 ${formatScaledDecimal(result.unitScaled, 1)}${unit}씩 나누면 몇 개를 만들고 얼마가 남는가?`;
+        const answer = `${result.count}개, ${formatScaledDecimal(result.remainderScaled, 1)}${unit}`;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    /* ===== 6학년 2학기 - 공간과 입체 (쌓기나무 수치만 텍스트로 제시) ===== */
+
+    // ⑭ 층별 쌓기나무 수의 합
+    g6s2_cube_layers_total() {
+        const layerCount = randInt(2, 4);
+        const layers = [];
+        for (let i = 0; i < layerCount; i++) layers.push(randInt(1, 15));
+        const total = layers.reduce((a, b) => a + b, 0);
+        const layerText = layers.map((v, idx) => `${idx + 1}층 ${v}개`).join(", ");
+        const formula = `${layerText}로 쌓았다. 전체 쌓기나무 수`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${total}개` };
+    },
+
+    // ⑮ 위에서 본 각 칸의 높이로 전체 개수 구하기
+    g6s2_cube_column_heights_total() {
+        const colCount = randInt(4, 7);
+        const heights = [];
+        for (let i = 0; i < colCount; i++) heights.push(randInt(1, 8));
+        const total = heights.reduce((a, b) => a + b, 0);
+        const formula = `위에서 보이는 ${colCount}개 칸의 높이가 ${heights.join(", ")}일 때 전체 쌓기나무 수`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${total}개` };
+    },
+
+    // ⑯ 전체 개수로 빠진 칸의 높이 구하기
+    g6s2_cube_missing_column_height() {
+        const colCount = randInt(4, 7);
+        const heights = [];
+        for (let i = 0; i < colCount - 1; i++) heights.push(randInt(1, 8));
+        const missingHeight = randInt(1, 8);
+        const total = heights.reduce((a, b) => a + b, 0) + missingHeight;
+        const blankIdx = randInt(0, colCount - 1);
+        const display = [...heights];
+        display.splice(blankIdx, 0, "?");
+        const formula = `위에서 보이는 ${colCount}개 칸 중 나머지 칸의 높이가 ${display.join(", ")}이고 전체 쌓기나무 수가 ${total}개일 때 빈칸의 높이`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(missingHeight) };
+    },
+
+    /* ===== 6학년 2학기 - 비례식과 비례배분 ===== */
+
+    // ⑰ 비를 간단한 자연수의 비로 나타내기
+    g6s2_ratio_simplify_natural() {
+        const base = generateUntilValid(
+            () => ({ a: randInt(1, 15), b: randInt(1, 15) }),
+            (v) => gcd(v.a, v.b) === 1 && v.a !== v.b
+        );
+        const factor = randInt(2, 8);
+        const before = { a: base.a * factor, b: base.b * factor };
+        const formula = `${before.a} : ${before.b}`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${base.a} : ${base.b}` };
+    },
+
+    // ⑱ 소수의 비를 자연수의 비로 나타내기 (양쪽 모두 실제 소수 한 자리로 보이는 조합만 채택)
+    g6s2_ratio_decimal_to_natural() {
+        const result = generateUntilValid(
+            () => {
+                const a = randInt(1, 12);
+                const b = randInt(1, 12);
+                if (gcd(a, b) !== 1 || a === b) return { valid: false };
+                const scaleFactor = randInt(1, 9); // 0.1 단위 배율
+                const decimalA = a * scaleFactor;
+                const decimalB = b * scaleFactor;
+                return { valid: decimalA % 10 !== 0 && decimalB % 10 !== 0, a, b, decimalA, decimalB };
+            },
+            (v) => v.valid
+        );
+        const formula = `${formatScaledDecimal(result.decimalA, 1)} : ${formatScaledDecimal(result.decimalB, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${result.a} : ${result.b}` };
+    },
+
+    // ⑲ 분수의 비를 자연수의 비로 나타내기 (분모의 최소공배수 이용 후 최대공약수로 간단히)
+    g6s2_ratio_fraction_to_natural() {
+        const d1 = randInt(2, 10);
+        const d2 = randInt(2, 10);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+        const commonDenom = lcm(d1, d2);
+        const scaledN1 = n1 * (commonDenom / d1);
+        const scaledN2 = n2 * (commonDenom / d2);
+        const simplified = simplifyRatio(scaledN1, scaledN2);
+        const formula = `${makeFractionHTML(n1, d1)} : ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${simplified.a} : ${simplified.b}` };
+    },
+
+    // ⑳ 같은 비의 빈칸
+    g6s2_equivalent_ratio_blank() {
+        const a = randInt(1, 15);
+        const b = randInt(1, 15);
+        const factor = randInt(2, 8);
+        const scaledA = a * factor;
+        const scaledB = b * factor;
+        const blankIsA = Math.random() < 0.5;
+        let formula, answer;
+        if (blankIsA) {
+            formula = `${a} : ${b} = ? : ${scaledB}`;
+            answer = String(scaledA);
+        } else {
+            formula = `${a} : ${b} = ${scaledA} : ?`;
+            answer = String(scaledB);
+        }
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    // ㉑ 비례식의 빈칸 (a:b=c:d, 네 자리 중 무작위로 빈칸)
+    g6s2_proportion_blank() {
+        const a = randInt(1, 12);
+        const b = randInt(1, 12);
+        const factor = randInt(2, 8);
+        const c = a * factor;
+        const d = b * factor;
+        const values = [a, b, c, d];
+        const blankIdx = randInt(0, 3);
+        const answer = values[blankIdx];
+        const display = values.map((v, idx) => (idx === blankIdx ? "?" : v));
+        const formula = `${display[0]} : ${display[1]} = ${display[2]} : ${display[3]}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(answer) };
+    },
+
+    // ㉒ 비례 관계의 값 구하기 (단위당 값을 자연수로 고정해 정확하게 역산)
+    g6s2_proportion_application() {
+        const result = generateUntilValid(
+            () => {
+                const unitQty = randInt(2, 10);
+                const targetQty = randInt(2, 20);
+                const perUnit = randInt(50, 2000);
+                const totalPriceForUnitQty = perUnit * unitQty;
+                const totalPriceForTargetQty = perUnit * targetQty;
+                return { unitQty, targetQty, perUnit, totalPriceForUnitQty, totalPriceForTargetQty };
+            },
+            (v) => v.targetQty !== v.unitQty
+        );
+        const items = ["연필", "공책", "지우개", "풀"];
+        const item = items[randInt(0, items.length - 1)];
+        const formula = `${item} ${result.unitQty}자루가 ${formatNumber(result.totalPriceForUnitQty)}원일 때 같은 ${item} ${result.targetQty}자루의 가격`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${formatNumber(result.totalPriceForTargetQty)}원` };
+    },
+
+    // ㉓ 비례배분 (전체가 비의 합으로 나누어떨어지게 생성)
+    g6s2_proportional_distribution() {
+        const result = generateUntilValid(
+            () => {
+                const a = randInt(1, 10);
+                const b = randInt(1, 10);
+                const g = gcd(a, b);
+                const simplifiedA = a / g, simplifiedB = b / g;
+                const multiplier = randInt(2, 20);
+                const total = (simplifiedA + simplifiedB) * multiplier;
+                const partA = simplifiedA * multiplier;
+                const partB = simplifiedB * multiplier;
+                return { simplifiedA, simplifiedB, total, partA, partB };
+            },
+            (v) => v.simplifiedA !== v.simplifiedB
+        );
+        const formula = `${result.total}를 ${result.simplifiedA} : ${result.simplifiedB}로 비례배분하기`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${result.partA}, ${result.partB}` };
+    },
+
+    /* ===== 6학년 2학기 - 원의 둘레와 넓이 (원주율 3.14, 정수 스케일 연산) ===== */
+
+    // ㉔ 지름으로 원주 구하기
+    g6s2_circle_circumference_diameter() {
+        const diameter = randInt(2, 50);
+        const circumference = calculateCircleValue("circumference", diameter);
+        const formula = `지름이 ${diameter}cm인 원의 원주`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${circumference}cm` };
+    },
+
+    // ㉕ 반지름으로 원주 구하기
+    g6s2_circle_circumference_radius() {
+        const radius = randInt(2, 25);
+        const circumference = calculateCircleValue("circumference", radius * 2);
+        const formula = `반지름이 ${radius}cm인 원의 원주`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${circumference}cm` };
+    },
+
+    // ㉖ 원주로 지름 구하기 (지름을 먼저 만든 뒤 원주를 계산해 역문제로 출제)
+    g6s2_circle_diameter_from_circumference() {
+        const diameter = randInt(2, 50);
+        const circumference = calculateCircleValue("circumference", diameter);
+        const formula = `원주가 ${circumference}cm인 원의 지름`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${diameter}cm` };
+    },
+
+    // ㉗ 원주로 반지름 구하기
+    g6s2_circle_radius_from_circumference() {
+        const radius = randInt(2, 25);
+        const circumference = calculateCircleValue("circumference", radius * 2);
+        const formula = `원주가 ${circumference}cm인 원의 반지름`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${radius}cm` };
+    },
+
+    // ㉘ 반지름으로 원의 넓이 구하기
+    g6s2_circle_area_radius() {
+        const radius = randInt(2, 25);
+        const area = calculateCircleValue("area", radius);
+        const formula = `반지름이 ${radius}cm인 원의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${area}cm\u00B2` };
+    },
+
+    // ㉙ 지름으로 원의 넓이 구하기 (지름은 짝수를 기본으로 생성)
+    g6s2_circle_area_diameter() {
+        const radius = randInt(2, 25); // 반지름부터 만들어 지름이 항상 짝수가 되게 함
+        const diameter = radius * 2;
+        const area = calculateCircleValue("area", radius);
+        const formula = `지름이 ${diameter}cm인 원의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${area}cm\u00B2` };
+    },
+
+    // ㉚ 원의 넓이로 반지름 구하기 (반지름을 먼저 생성해 넓이를 계산한 뒤 역문제로 출제)
+    g6s2_circle_radius_from_area() {
+        const radius = randInt(2, 25);
+        const area = calculateCircleValue("area", radius);
+        const formula = `넓이가 ${area}cm\u00B2인 원의 반지름`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${radius}cm` };
+    },
+
+    // ㉛ 반원의 둘레 (곡선 부분 + 지름을 모두 포함)
+    g6s2_semicircle_perimeter() {
+        const radius = randInt(2, 25);
+        const diameter = radius * 2;
+        const curvedPartScaled = radius * PI_SCALED; // 소수 둘째 자리 스케일
+        const totalScaled = curvedPartScaled + diameter * 100; // 지름도 같은 스케일(100)로 변환해 합산
+        const perimeter = formatScaledDecimal(totalScaled, 2);
+        const formula = `반지름이 ${radius}cm인 반원의 둘레 (지름 포함)`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${perimeter}cm` };
+    },
+
+    /* ===== 6학년 2학기 - 원기둥, 원뿔, 구 (그림·전개도 없이 구성 요소와 성질만 텍스트로) ===== */
+
+    // ㉜ 성질을 보고 입체도형 이름 찾기
+    g6s2_round_solid_name() {
+        const descriptions = {
+            "원기둥": "평평한 면이 2개이고 굽은 면이 1개인 입체도형",
+            "원뿔": "평평한 면이 1개이고 꼭짓점이 1개인 입체도형",
+            "구": "어느 방향에서 보아도 항상 원 모양으로 보이는 입체도형"
+        };
+        const names = Object.keys(descriptions);
+        const name = names[randInt(0, names.length - 1)];
+        const formula = descriptions[name];
+        return { formulaFront: formula, formulaBack: formula, answer: name };
+    },
+
+    // ㉝ 원기둥의 구성 요소 수
+    g6s2_cylinder_component_count() {
+        return roundSolidComponentQuestion("원기둥");
+    },
+
+    // ㉞ 원뿔의 구성 요소 수
+    g6s2_cone_component_count() {
+        return roundSolidComponentQuestion("원뿔");
+    },
+
+    // ㉟ 구의 구성 요소 수
+    g6s2_sphere_component_count() {
+        return roundSolidComponentQuestion("구");
+    },
+
+    // ㊱ 원기둥의 두 밑면의 성질
+    g6s2_cylinder_base_property() {
+        const questions = [
+            { q: "두 밑면은 서로 어떤 관계인가?", a: "평행합니다" },
+            { q: "두 밑면의 모양과 크기는 서로 어떠한가?", a: "합동입니다" }
+        ];
+        const pick = questions[randInt(0, questions.length - 1)];
+        const formula = `원기둥의 ${pick.q}`;
+        return { formulaFront: formula, formulaBack: formula, answer: pick.a };
+    },
+
+    // ㊲ 입체도형의 성질 판단 (틀린 문장은 실제 값과 정확히 1만큼만 다르게 하여 모호하지 않게 함)
+    g6s2_round_solid_property_check() {
+        const solids = ["원기둥", "원뿔", "구"];
+        const solidName = solids[randInt(0, solids.length - 1)];
+        const facts = ROUND_SOLID_FACTS[solidName];
+        const wantTrue = Math.random() < 0.5;
+        const properties = [
+            { word: "평평한 면", value: facts.flatFaces },
+            { word: "굽은 면", value: facts.curvedFaces },
+            { word: "모서리", value: facts.edges },
+            { word: "꼭짓점", value: facts.vertices }
+        ];
+        const pick = properties[randInt(0, properties.length - 1)];
+        let statedValue = pick.value;
+        if (!wantTrue) {
+            statedValue = pick.value + 1; // 실제 값보다 정확히 1 큰 값으로만 틀리게 만들어 모호함 방지
+        }
+        const formula = `${solidName}은 ${pick.word}이 ${statedValue}개이다.`;
+        return { formulaFront: formula, formulaBack: formula, answer: wantTrue ? "맞습니다" : "아닙니다" };
     }
 };
 
