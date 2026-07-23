@@ -108,7 +108,22 @@ const problemCatalog = [
                     { id: "g4s1_mul_round", label: "몇백몇십 × 몇십", semester: 1 },
                     // 4학년 1학기 - 나눗셈
                     { id: "g4s1_div_3x2_no_rem", label: "세 자리 수 ÷ 두 자리 수 (나머지 없음)", semester: 1 },
-                    { id: "g4s1_div_3x2_rem", label: "세 자리 수 ÷ 두 자리 수 (나머지 있음)", semester: 1 }
+                    { id: "g4s1_div_3x2_rem", label: "세 자리 수 ÷ 두 자리 수 (나머지 있음)", semester: 1 },
+                    // 4학년 2학기 - 분수의 덧셈과 뺄셈
+                    { id: "g4s2_frac_proper_add", label: "진분수 + 진분수", semester: 2 },
+                    { id: "g4s2_frac_mixed_proper_add", label: "대분수 + 진분수", semester: 2 },
+                    { id: "g4s2_frac_mixed_add", label: "대분수 + 대분수", semester: 2 },
+                    { id: "g4s2_frac_proper_sub", label: "진분수 - 진분수", semester: 2 },
+                    { id: "g4s2_frac_mixed_proper_sub", label: "대분수 - 진분수", semester: 2 },
+                    { id: "g4s2_frac_mixed_sub", label: "대분수 - 대분수", semester: 2 },
+                    { id: "g4s2_frac_whole_sub", label: "자연수 - 진분수", semester: 2 },
+                    // 4학년 2학기 - 소수의 덧셈과 뺄셈
+                    { id: "g4s2_decimal_1_add", label: "소수 한 자리 수의 덧셈", semester: 2 },
+                    { id: "g4s2_decimal_2_add", label: "소수 두 자리 수의 덧셈", semester: 2 },
+                    { id: "g4s2_decimal_mixed_add", label: "소수 자릿수가 다른 덧셈", semester: 2 },
+                    { id: "g4s2_decimal_1_sub", label: "소수 한 자리 수의 뺄셈", semester: 2 },
+                    { id: "g4s2_decimal_2_sub", label: "소수 두 자리 수의 뺄셈", semester: 2 },
+                    { id: "g4s2_decimal_mixed_sub", label: "소수 자릿수가 다른 뺄셈", semester: 2 }
                 ]
             },
             {
@@ -126,7 +141,18 @@ const problemCatalog = [
                 subjects: [
                     { id: "g4s1_angle_add", label: "각도의 합", semester: 1 },
                     { id: "g4s1_angle_sub", label: "각도의 차", semester: 1 },
-                    { id: "g4s1_angle_complement", label: "직각·평각을 만드는 각", semester: 1 }
+                    { id: "g4s1_angle_complement", label: "직각·평각을 만드는 각", semester: 1 },
+                    // 4학년 2학기 - 삼각형
+                    { id: "g4s2_triangle_side_type", label: "삼각형 변의 길이로 분류하기", semester: 2 },
+                    { id: "g4s2_triangle_angle_type", label: "삼각형 각의 크기로 분류하기", semester: 2 },
+                    { id: "g4s2_triangle_missing_angle", label: "삼각형의 나머지 한 각", semester: 2 },
+                    // 4학년 2학기 - 사각형
+                    { id: "g4s2_quadrilateral_name", label: "사각형 이름 찾기", semester: 2 },
+                    { id: "g4s2_quadrilateral_property", label: "사각형의 성질 판단", semester: 2 },
+                    // 4학년 2학기 - 다각형
+                    { id: "g4s2_polygon_name", label: "다각형의 이름", semester: 2 },
+                    { id: "g4s2_polygon_count", label: "다각형의 변과 꼭짓점 수", semester: 2 },
+                    { id: "g4s2_regular_polygon_property", label: "정다각형의 성질", semester: 2 }
                 ]
             },
             {
@@ -147,13 +173,63 @@ const problemCatalog = [
                 id: "number",
                 label: "수와 연산",
                 subjects: [
+                    // 학기 미배정(준비 중) 기존 항목 - semester 없음
                     { id: "mul_double", label: "두 자리 × 두 자리" },
                     { id: "div_no_rem3", label: "세 자리 ÷ 한 자리 (나머지 없음)" },
                     { id: "div_rem3", label: "세 자리 ÷ 한 자리 (나머지 있음)" },
                     { id: "frac_of", label: "~의 몇 분의 몇" },
                     { id: "frac_imp", label: "가분수 ↔ 대분수" },
                     { id: "dec_add", label: "소수 덧셈" },
-                    { id: "dec_sub", label: "소수 뺄셈" }
+                    { id: "dec_sub", label: "소수 뺄셈" },
+                    // 5학년 1학기 - 자연수의 혼합 계산
+                    { id: "g5s1_mixed_add_sub", label: "덧셈과 뺄셈의 혼합 계산", semester: 1 },
+                    { id: "g5s1_mixed_mul_div", label: "곱셈과 나눗셈의 혼합 계산", semester: 1 },
+                    { id: "g5s1_mixed_add_sub_mul", label: "덧셈·뺄셈·곱셈의 혼합 계산", semester: 1 },
+                    { id: "g5s1_mixed_all_ops", label: "사칙연산 혼합 계산", semester: 1 },
+                    { id: "g5s1_mixed_parentheses", label: "괄호가 있는 혼합 계산", semester: 1 },
+                    // 5학년 1학기 - 약수와 배수
+                    { id: "g5s1_factor_list", label: "자연수의 약수 찾기", semester: 1 },
+                    { id: "g5s1_factor_count", label: "약수의 개수", semester: 1 },
+                    { id: "g5s1_multiple_nth", label: "몇 번째 배수", semester: 1 },
+                    { id: "g5s1_multiple_check", label: "배수인지 판단하기", semester: 1 },
+                    { id: "g5s1_gcd", label: "최대공약수", semester: 1 },
+                    { id: "g5s1_lcm", label: "최소공배수", semester: 1 },
+                    // 5학년 1학기 - 약분과 통분
+                    { id: "g5s1_fraction_equivalent", label: "크기가 같은 분수의 빈칸", semester: 1 },
+                    { id: "g5s1_fraction_reduce", label: "분수를 약분하기", semester: 1 },
+                    { id: "g5s1_fraction_reduce_gcd", label: "약분할 수 있는 수 찾기", semester: 1 },
+                    { id: "g5s1_fraction_common_denom", label: "두 분수 통분하기", semester: 1 },
+                    { id: "g5s1_fraction_compare", label: "분수의 크기 비교", semester: 1 },
+                    // 5학년 1학기 - 분수의 덧셈과 뺄셈 (분모가 다름)
+                    { id: "g5s1_unlike_fraction_add", label: "진분수 + 진분수 (분모가 다름)", semester: 1 },
+                    { id: "g5s1_unlike_fraction_mixed_proper_add", label: "대분수 + 진분수 (분모가 다름)", semester: 1 },
+                    { id: "g5s1_unlike_fraction_mixed_add", label: "대분수 + 대분수 (분모가 다름)", semester: 1 },
+                    { id: "g5s1_unlike_fraction_sub", label: "진분수 - 진분수 (분모가 다름)", semester: 1 },
+                    { id: "g5s1_unlike_fraction_mixed_proper_sub", label: "대분수 - 진분수 (분모가 다름)", semester: 1 },
+                    { id: "g5s1_unlike_fraction_mixed_sub", label: "대분수 - 대분수 (분모가 다름)", semester: 1 }
+                ]
+            },
+            {
+                id: "pattern",
+                label: "변화와 관계",
+                subjects: [
+                    { id: "g5s1_correspondence_forward", label: "대응 관계의 값 구하기", semester: 1 },
+                    { id: "g5s1_correspondence_backward", label: "대응 관계에서 처음 값 구하기", semester: 1 },
+                    { id: "g5s1_correspondence_table", label: "대응표의 빈칸", semester: 1 }
+                ]
+            },
+            {
+                id: "shape_measure",
+                label: "도형과 측정",
+                subjects: [
+                    { id: "g5s1_rect_perimeter", label: "직사각형의 둘레", semester: 1 },
+                    { id: "g5s1_square_perimeter", label: "정사각형의 둘레", semester: 1 },
+                    { id: "g5s1_rect_area", label: "직사각형의 넓이", semester: 1 },
+                    { id: "g5s1_square_area", label: "정사각형의 넓이", semester: 1 },
+                    { id: "g5s1_parallelogram_area", label: "평행사변형의 넓이", semester: 1 },
+                    { id: "g5s1_triangle_area", label: "삼각형의 넓이", semester: 1 },
+                    { id: "g5s1_trapezoid_area", label: "사다리꼴의 넓이", semester: 1 },
+                    { id: "g5s1_rhombus_area", label: "마름모의 넓이", semester: 1 }
                 ]
             }
         ]

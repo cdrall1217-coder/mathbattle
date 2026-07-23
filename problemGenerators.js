@@ -23,6 +23,190 @@ function randomDigitNumber(digits) {
     return Number(str);
 }
 
+/** min 이상 max 이하의 정수 난수 (양 끝 포함) */
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/** 조건(isValidFn)을 만족할 때까지 generateFn을 재시도 (무한루프 방지용 최대 시도 횟수 포함) */
+function generateUntilValid(generateFn, isValidFn, maxAttempts) {
+    let result;
+    const limit = maxAttempts || 100;
+    for (let i = 0; i < limit; i++) {
+        result = generateFn();
+        if (isValidFn(result)) return result;
+    }
+    return result; // 극히 드문 경우: 마지막 시도 결과라도 반환
+}
+
+/* ===== 분수 공용 함수 (4학년 2학기) ===== */
+
+/**
+ * 가분수를 정규화한다 (분자가 분모 이상이면 자연수 부분으로 이월).
+ * numerator는 0 이상이어야 한다.
+ * @returns {{whole: number, numerator: number}}
+ */
+function normalizeMixedNumber(whole, numerator, denominator) {
+    const extraWhole = Math.floor(numerator / denominator);
+    const finalNumerator = numerator - extraWhole * denominator;
+    return { whole: whole + extraWhole, numerator: finalNumerator };
+}
+
+/** 한 자리 자연수(0~9 등)를 소리 내어 읽을 때 받침 유무에 따라 "과"/"와"를 고른다. (일의 자리 발음 기준) */
+function koreanMixedConnector(n) {
+    const connectorByLastDigit = ["과", "과", "와", "과", "와", "와", "과", "과", "과", "와"];
+    return connectorByLastDigit[Math.abs(n) % 10];
+}
+
+/**
+ * 자연수 + 분수를 대분수/진분수/자연수 형태의 HTML 문자열로 표시한다.
+ * 세로형 분수 표시(makeFractionHTML)를 사용하며, 필요 시 가분수를 자동으로 정규화한다.
+ */
+function formatMixedNumber(whole, numerator, denominator) {
+    const norm = normalizeMixedNumber(whole, numerator, denominator);
+    if (norm.numerator === 0) {
+        return String(norm.whole);
+    }
+    if (norm.whole === 0) {
+        return makeFractionHTML(norm.numerator, denominator);
+    }
+    return `${norm.whole}${koreanMixedConnector(norm.whole)} ${makeFractionHTML(norm.numerator, denominator)}`;
+}
+
+/* ===== 소수 공용 함수 (4학년 2학기) - 부동소수점 오차 방지 ===== */
+
+/**
+ * 정수로 스케일된 소수 값을 문자열로 표시한다. (예: scaledValue=706, decimals=2 -> "7.06")
+ * 소수점 아래 불필요한 0은 제거한다.
+ */
+function formatScaledDecimal(scaledValue, decimals) {
+    const sign = scaledValue < 0 ? "-" : "";
+    const abs = Math.abs(scaledValue);
+    const scale = Math.pow(10, decimals);
+    const intPart = Math.floor(abs / scale);
+    let fracPart = String(abs % scale).padStart(decimals, "0");
+    fracPart = fracPart.replace(/0+$/, "");
+    return fracPart.length > 0 ? `${sign}${intPart}.${fracPart}` : `${sign}${intPart}`;
+}
+
+/** 소수점 이하 마지막 자리가 0이 아닌 스케일된 정수를 생성 (진짜 해당 자릿수의 소수가 되도록 보장) */
+function randDecimalScaled(minScaled, maxScaled) {
+    let v;
+    do {
+        v = randInt(minScaled, maxScaled);
+    } while (v % 10 === 0);
+    return v;
+}
+
+/* ===== 삼각형 공용 함수 (4학년 2학기) ===== */
+
+/** 세 변의 길이가 실제 삼각형을 이룰 수 있는지 확인 (삼각부등식) */
+function isValidTriangleSides(a, b, c) {
+    return a + b > c && b + c > a && a + c > b;
+}
+
+/* ===== 최대공약수·최소공배수·분수 약분 공용 함수 (5학년 1학기) ===== */
+
+/** 유클리드 호제법으로 최대공약수를 구한다. */
+function gcd(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { [a, b] = [b, a % b]; }
+    return a || 1;
+}
+
+/** 최소공배수를 구한다. */
+function lcm(a, b) {
+    return Math.abs(a * b) / gcd(a, b);
+}
+
+/** 분수를 최대공약수로 나누어 기약분수로 만든다. */
+function simplifyFraction(numerator, denominator) {
+    const g = gcd(numerator, denominator);
+    return { numerator: numerator / g, denominator: denominator / g };
+}
+
+/** 자연수의 약수를 오름차순으로 모두 구한다. */
+function getDivisors(n) {
+    const divisors = [];
+    for (let i = 1; i <= n; i++) {
+        if (n % i === 0) divisors.push(i);
+    }
+    return divisors;
+}
+
+/**
+ * 자연수부(whole)+분수부(numerator/denominator)로 표현된 두 수를 통분하여
+ * 덧셈 또는 뺄셈한 뒤, 기약분수로 약분하고 대분수로 정규화한 결과를 반환한다.
+ * (4학년 2학기에서 만든 normalizeMixedNumber를 재사용)
+ * @param {'+'|'-'} op
+ * @returns {{whole:number, numerator:number, denominator:number}}
+ */
+function computeUnlikeFractionResult(w1, n1, d1, w2, n2, d2, op) {
+    const commonDenom = lcm(d1, d2);
+    const num1 = w1 * commonDenom + n1 * (commonDenom / d1);
+    const num2 = w2 * commonDenom + n2 * (commonDenom / d2);
+    const totalNumerator = op === "+" ? num1 + num2 : num1 - num2;
+    const simplified = simplifyFraction(totalNumerator, commonDenom);
+    const norm = normalizeMixedNumber(0, simplified.numerator, simplified.denominator);
+    return { whole: norm.whole, numerator: norm.numerator, denominator: simplified.denominator };
+}
+
+/** 분모가 다른 두 분수(자연수부 포함)의 크기를 정수 교차곱으로 비교한다 (부동소수점 미사용). */
+function compareUnlikeFractions(w1, n1, d1, w2, n2, d2) {
+    const val1 = w1 * d1 + n1; // w1 + n1/d1 을 분모 d1 기준 분자로 표현
+    const val2 = w2 * d2 + n2;
+    const left = val1 * d2;
+    const right = val2 * d1;
+    if (left > right) return ">";
+    if (left < right) return "<";
+    return "=";
+}
+
+/* ===== 도형 넓이 공용 표시 헬퍼 (5학년 1학기) ===== */
+function formatCm(value) { return `${value}cm`; }
+function formatCm2(value) { return `${value}cm\u00B2`; }
+
+/* ===== 사각형/다각형 참조 데이터 (4학년 2학기) ===== */
+
+// 성질을 보고 이름을 찾는 문제용 - 포함 관계 때문에 답이 모호해지지 않도록
+// "가장 구체적인 이름"이 명확히 정해지는 조건 문장만 사용한다.
+const QUADRILATERAL_NAME_FACTS = [
+    { desc: "한 쌍의 마주 보는 변이 서로 평행한 사각형", name: "사다리꼴" },
+    { desc: "두 쌍의 마주 보는 변이 서로 평행한 사각형", name: "평행사변형" },
+    { desc: "두 쌍의 마주 보는 변이 서로 평행하고 네 각이 모두 직각인 사각형", name: "직사각형" },
+    { desc: "두 쌍의 마주 보는 변이 서로 평행하고 네 변의 길이가 모두 같은 사각형", name: "마름모" },
+    { desc: "네 변의 길이가 모두 같고 네 각이 모두 직각인 사각형", name: "정사각형" }
+];
+
+// 사각형 이름을 주고 성질(평행한 변의 쌍/같은 길이의 변/직각의 개수)을 묻는 문제용.
+// 도형별로 "답이 한 가지로 명확한" 질문만 등록한다.
+const QUADRILATERAL_PROPERTY_QUESTIONS = {
+    "사다리꼴": [
+        { q: "평행한 변은 몇 쌍인가?", a: "1쌍" }
+    ],
+    "평행사변형": [
+        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
+        { q: "같은 길이의 변은 몇 쌍인가?", a: "2쌍" }
+    ],
+    "직사각형": [
+        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
+        { q: "같은 길이의 변은 몇 쌍인가?", a: "2쌍" },
+        { q: "직각은 모두 몇 개인가?", a: "4개" }
+    ],
+    "마름모": [
+        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
+        { q: "같은 길이의 변은 몇 개인가?", a: "4개" }
+    ],
+    "정사각형": [
+        { q: "평행한 변은 몇 쌍인가?", a: "2쌍" },
+        { q: "같은 길이의 변은 몇 개인가?", a: "4개" },
+        { q: "직각은 모두 몇 개인가?", a: "4개" }
+    ]
+};
+
+// 다각형 이름 (인덱스 0 = 변 3개 삼각형)
+const POLYGON_NAMES = ["삼각형", "사각형", "오각형", "육각형", "칠각형", "팔각형", "구각형", "십각형"];
+
 const problemGenerators = {
     add1() {
         const n1 = Math.floor(Math.random() * 9) + 1;
@@ -604,6 +788,829 @@ const problemGenerators = {
 
         const formula = display.join(", ");
         return { formulaFront: formula, formulaBack: formula, answer: formatNumber(answer) };
+    },
+
+    /* ========== 4학년 2학기 - 분수의 덧셈과 뺄셈 ========== */
+    // 모든 분수는 분모가 서로 같게 생성하며, 세로형 분수 표시(makeFractionHTML)와
+    // 대분수 정규화 공용 함수(formatMixedNumber)를 사용한다.
+
+    // ① 진분수 + 진분수
+    g4s2_frac_proper_add() {
+        const denominator = randInt(2, 12);
+        const n1 = randInt(1, denominator - 1);
+        const n2 = randInt(1, denominator - 1);
+        const formula = `${makeFractionHTML(n1, denominator)} + ${makeFractionHTML(n2, denominator)}`;
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(0, n1 + n2, denominator)
+        };
+    },
+
+    // ② 대분수 + 진분수
+    g4s2_frac_mixed_proper_add() {
+        const denominator = randInt(2, 12);
+        const whole1 = randInt(1, 5);
+        const n1 = randInt(1, denominator - 1);
+        const n2 = randInt(1, denominator - 1);
+        const formula = `${formatMixedNumber(whole1, n1, denominator)} + ${makeFractionHTML(n2, denominator)}`;
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(whole1, n1 + n2, denominator)
+        };
+    },
+
+    // ③ 대분수 + 대분수
+    g4s2_frac_mixed_add() {
+        const denominator = randInt(2, 12);
+        const whole1 = randInt(1, 5);
+        const whole2 = randInt(1, 5);
+        const n1 = randInt(1, denominator - 1);
+        const n2 = randInt(1, denominator - 1);
+        const formula = `${formatMixedNumber(whole1, n1, denominator)} + ${formatMixedNumber(whole2, n2, denominator)}`;
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(whole1 + whole2, n1 + n2, denominator)
+        };
+    },
+
+    // ④ 진분수 - 진분수 (첫 분자 >= 둘째 분자, 음수 없음)
+    g4s2_frac_proper_sub() {
+        const denominator = randInt(2, 12);
+        const n2 = randInt(1, denominator - 1);
+        const n1 = randInt(n2, denominator - 1);
+        const formula = `${makeFractionHTML(n1, denominator)} - ${makeFractionHTML(n2, denominator)}`;
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(0, n1 - n2, denominator)
+        };
+    },
+
+    // ⑤ 대분수 - 진분수 (받아내림 있는 경우/없는 경우 모두 생성)
+    g4s2_frac_mixed_proper_sub() {
+        const denominator = randInt(2, 12);
+        const whole1 = randInt(1, 5);
+        const n1 = randInt(1, denominator - 1);
+        const n2 = randInt(1, denominator - 1);
+        const formula = `${formatMixedNumber(whole1, n1, denominator)} - ${makeFractionHTML(n2, denominator)}`;
+
+        let resultWhole, resultNumerator;
+        if (n1 >= n2) {
+            resultWhole = whole1;
+            resultNumerator = n1 - n2;
+        } else {
+            resultWhole = whole1 - 1;
+            resultNumerator = n1 + denominator - n2;
+        }
+
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(resultWhole, resultNumerator, denominator)
+        };
+    },
+
+    // ⑥ 대분수 - 대분수 (결과 0 이상, 받아내림 있는/없는 경우 모두 생성)
+    g4s2_frac_mixed_sub() {
+        const denominator = randInt(2, 12);
+        let whole1, whole2, n1, n2, val1, val2;
+        do {
+            whole1 = randInt(1, 5);
+            whole2 = randInt(1, 5);
+            n1 = randInt(1, denominator - 1);
+            n2 = randInt(1, denominator - 1);
+            val1 = whole1 * denominator + n1;
+            val2 = whole2 * denominator + n2;
+        } while (val1 < val2); // 완전히 같은 경우(답 0)는 자연 발생 빈도만큼만 허용
+
+        const formula = `${formatMixedNumber(whole1, n1, denominator)} - ${formatMixedNumber(whole2, n2, denominator)}`;
+
+        let resultWhole, resultNumerator;
+        if (n1 >= n2) {
+            resultWhole = whole1 - whole2;
+            resultNumerator = n1 - n2;
+        } else {
+            resultWhole = whole1 - whole2 - 1;
+            resultNumerator = n1 + denominator - n2;
+        }
+
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(resultWhole, resultNumerator, denominator)
+        };
+    },
+
+    // ⑦ 자연수 - 진분수 (정답은 대분수로 표시)
+    g4s2_frac_whole_sub() {
+        const whole = randInt(1, 9);
+        const denominator = randInt(2, 12);
+        const numerator = randInt(1, denominator - 1);
+        const formula = `${whole} - ${makeFractionHTML(numerator, denominator)}`;
+        return {
+            formulaFront: formula,
+            formulaBack: formula,
+            answer: formatMixedNumber(whole - 1, denominator - numerator, denominator)
+        };
+    },
+
+    /* ========== 4학년 2학기 - 소수의 덧셈과 뺄셈 ========== */
+    // 모든 계산은 정수로 스케일링해 처리하여 부동소수점 오차를 방지한다 (formatScaledDecimal 참고).
+
+    // ⑧ 소수 한 자리 수의 덧셈 (각 수 0.1~9.9, 합은 20 미만)
+    g4s2_decimal_1_add() {
+        let a, b;
+        do {
+            a = randDecimalScaled(1, 99);
+            b = randDecimalScaled(1, 99);
+        } while (a + b >= 200);
+        const formula = `${formatScaledDecimal(a, 1)} + ${formatScaledDecimal(b, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(a + b, 1) };
+    },
+
+    // ⑨ 소수 두 자리 수의 덧셈 (각 수 0.01~9.99, 받아올림 있는/없는 경우 모두 생성)
+    g4s2_decimal_2_add() {
+        const a = randDecimalScaled(1, 999);
+        const b = randDecimalScaled(1, 999);
+        const formula = `${formatScaledDecimal(a, 2)} + ${formatScaledDecimal(b, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(a + b, 2) };
+    },
+
+    // ⑩ 소수 자릿수가 다른 덧셈 (소수 한 자리 + 소수 두 자리)
+    g4s2_decimal_mixed_add() {
+        const a1 = randDecimalScaled(1, 99); // 소수 한 자리 (십분의 일 단위)
+        const b2 = randDecimalScaled(1, 999); // 소수 두 자리 (백분의 일 단위)
+        const a2 = a1 * 10; // 백분의 일 단위로 통일
+        const sum2 = a2 + b2;
+        const formula = `${formatScaledDecimal(a1, 1)} + ${formatScaledDecimal(b2, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(sum2, 2) };
+    },
+
+    // ⑪ 소수 한 자리 수의 뺄셈 (첫 수 >= 둘째 수, 음수 없음)
+    g4s2_decimal_1_sub() {
+        let a, b;
+        do {
+            a = randDecimalScaled(1, 99);
+            b = randDecimalScaled(1, 99);
+        } while (a < b);
+        const formula = `${formatScaledDecimal(a, 1)} - ${formatScaledDecimal(b, 1)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(a - b, 1) };
+    },
+
+    // ⑫ 소수 두 자리 수의 뺄셈 (받아내림 있는/없는 경우 모두 생성, 음수 없음)
+    g4s2_decimal_2_sub() {
+        let a, b;
+        do {
+            a = randDecimalScaled(1, 999);
+            b = randDecimalScaled(1, 999);
+        } while (a < b);
+        const formula = `${formatScaledDecimal(a, 2)} - ${formatScaledDecimal(b, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(a - b, 2) };
+    },
+
+    // ⑬ 소수 자릿수가 다른 뺄셈 (소수 한 자리에서 소수 두 자리를 뺌, 큰 수 - 작은 수)
+    g4s2_decimal_mixed_sub() {
+        let a1, b2, a2;
+        do {
+            a1 = randDecimalScaled(1, 99);
+            b2 = randDecimalScaled(1, 999);
+            a2 = a1 * 10;
+        } while (a2 < b2);
+        const diff2 = a2 - b2;
+        const formula = `${formatScaledDecimal(a1, 1)} - ${formatScaledDecimal(b2, 2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatScaledDecimal(diff2, 2) };
+    },
+
+    /* ========== 4학년 2학기 - 도형과 측정: 삼각형 ========== */
+
+    // ⑭ 변의 길이에 따른 삼각형 분류 (정삼각형/이등변삼각형/세 변이 모두 다른 삼각형)
+    g4s2_triangle_side_type() {
+        const typeRoll = randInt(0, 2);
+        let a, b, c, answer;
+
+        if (typeRoll === 0) {
+            a = b = c = randInt(3, 12);
+            answer = "정삼각형";
+        } else if (typeRoll === 1) {
+            const pair = generateUntilValid(
+                () => ({ side: randInt(2, 12), base: randInt(2, 12) }),
+                (v) => v.side !== v.base && isValidTriangleSides(v.side, v.side, v.base)
+            );
+            a = pair.side; b = pair.side; c = pair.base;
+            answer = "이등변삼각형";
+        } else {
+            const triple = generateUntilValid(
+                () => ({ a: randInt(3, 12), b: randInt(3, 12), c: randInt(3, 12) }),
+                (v) => v.a !== v.b && v.b !== v.c && v.a !== v.c && isValidTriangleSides(v.a, v.b, v.c)
+            );
+            a = triple.a; b = triple.b; c = triple.c;
+            answer = "세 변의 길이가 모두 다른 삼각형";
+        }
+
+        const formula = `세 변의 길이가 ${a}cm, ${b}cm, ${c}cm인 삼각형`;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    // ⑮ 각의 크기에 따른 삼각형 분류 (예각/직각/둔각삼각형, 세 각의 합은 항상 180°)
+    g4s2_triangle_angle_type() {
+        const typeRoll = randInt(0, 2);
+        let a, b, c, answer;
+
+        if (typeRoll === 0) {
+            // 직각삼각형: 한 각 90°, 나머지 두 각(각 1~89°)의 합 90°
+            a = 90;
+            b = randInt(1, 89);
+            c = 90 - b;
+            answer = "직각삼각형";
+        } else if (typeRoll === 1) {
+            // 둔각삼각형: 한 각 91~178°, 나머지 두 각은 90° 미만
+            a = randInt(91, 178);
+            const remain = 180 - a;
+            b = randInt(1, remain - 1);
+            c = remain - b;
+            answer = "둔각삼각형";
+        } else {
+            // 예각삼각형: 세 각 모두 90° 미만
+            const triple = generateUntilValid(
+                () => {
+                    const x = randInt(20, 89);
+                    const y = randInt(20, 89);
+                    return { x, y, z: 180 - x - y };
+                },
+                (v) => v.z > 0 && v.z < 90
+            );
+            a = triple.x; b = triple.y; c = triple.z;
+            answer = "예각삼각형";
+        }
+
+        const angles = [a, b, c];
+        for (let i = angles.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [angles[i], angles[j]] = [angles[j], angles[i]];
+        }
+
+        const formula = `세 각이 ${angles[0]}°, ${angles[1]}°, ${angles[2]}°인 삼각형`;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    // ⑯ 삼각형의 나머지 한 각 (세 각의 합 180°, 정답은 1° 이상)
+    g4s2_triangle_missing_angle() {
+        const pair = generateUntilValid(
+            () => {
+                const a = randInt(10, 150);
+                const b = randInt(10, 150);
+                return { a, b, c: 180 - a - b };
+            },
+            (v) => v.c >= 1 && v.c <= 158
+        );
+        const formula = `삼각형의 두 각이 ${pair.a}°, ${pair.b}°일 때 나머지 한 각`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${pair.c}°` };
+    },
+
+    /* ========== 4학년 2학기 - 도형과 측정: 사각형 ========== */
+
+    // ⑰ 성질을 보고 사각형 이름 찾기 (포함 관계상 답이 모호하지 않도록 조건을 고정 문구로 제공)
+    g4s2_quadrilateral_name() {
+        const pick = QUADRILATERAL_NAME_FACTS[randInt(0, QUADRILATERAL_NAME_FACTS.length - 1)];
+        return { formulaFront: pick.desc, formulaBack: pick.desc, answer: pick.name };
+    },
+
+    // ⑱ 사각형의 성질 판단 (평행한 변의 쌍 / 같은 길이의 변 / 직각의 개수 중 답이 명확한 것만 질문)
+    g4s2_quadrilateral_property() {
+        const shapes = Object.keys(QUADRILATERAL_PROPERTY_QUESTIONS);
+        const shape = shapes[randInt(0, shapes.length - 1)];
+        const options = QUADRILATERAL_PROPERTY_QUESTIONS[shape];
+        const pick = options[randInt(0, options.length - 1)];
+        const formula = `${shape}의 ${pick.q}`;
+        return { formulaFront: formula, formulaBack: formula, answer: pick.a };
+    },
+
+    /* ========== 4학년 2학기 - 도형과 측정: 다각형 ========== */
+
+    // ⑲ 다각형의 이름 (변의 수 -> 이름, 삼각형~십각형)
+    g4s2_polygon_name() {
+        const sides = randInt(3, 10);
+        const name = POLYGON_NAMES[sides - 3];
+        const formula = `변이 ${sides}개인 다각형`;
+        return { formulaFront: formula, formulaBack: formula, answer: name };
+    },
+
+    // ⑳ 다각형의 변과 꼭짓점 수 (단순다각형은 변의 수 = 꼭짓점의 수)
+    g4s2_polygon_count() {
+        const sides = randInt(3, 10);
+        const name = POLYGON_NAMES[sides - 3];
+        const askVertex = Math.random() < 0.5;
+        const questionWord = askVertex ? "꼭짓점" : "변";
+        const formula = `${name}의 ${questionWord}은 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${sides}개` };
+    },
+
+    // ㉑ 정다각형의 성질 (변의 길이와 각의 크기가 모두 같다는 조건만 출제)
+    g4s2_regular_polygon_property() {
+        const variants = [
+            "모든 변의 길이와 모든 각의 크기가 각각 같은 다각형",
+            "모든 변의 길이가 서로 같고, 모든 각의 크기도 서로 같은 다각형",
+            "변의 길이가 모두 같고 각의 크기도 모두 같은 다각형"
+        ];
+        const formula = variants[randInt(0, variants.length - 1)];
+        return { formulaFront: formula, formulaBack: formula, answer: "정다각형" };
+    },
+
+    /* ========== 5학년 1학기 - 자연수의 혼합 계산 ========== */
+    // eval을 사용하지 않고, 계산 순서(왼쪽부터/괄호 우선/곱셈 우선)를 구조적으로 직접 계산한다.
+    // 나눗셈이 필요한 유형은 몫을 먼저 정한 뒤 피제수를 역산하여 항상 나누어떨어지게 만든다.
+
+    // ① 덧셈과 뺄셈의 혼합 계산 (왼쪽부터 순서대로, 중간·최종 결과 모두 비음수)
+    g5s1_mixed_add_sub() {
+        const termCount = randInt(3, 4);
+        let current = randInt(10, 60);
+        const parts = [String(current)];
+        for (let i = 1; i < termCount; i++) {
+            let isAdd = Math.random() < 0.5;
+            if (current === 0) isAdd = true; // 0에서는 반드시 덧셈으로 진행 (음수 방지)
+            if (isAdd) {
+                const addAmt = randInt(1, 40);
+                parts.push("+", String(addAmt));
+                current += addAmt;
+            } else {
+                const subAmt = randInt(1, Math.min(current, 40));
+                parts.push("-", String(subAmt));
+                current -= subAmt;
+            }
+        }
+        const formula = parts.join(" ");
+        return { formulaFront: formula, formulaBack: formula, answer: String(current) };
+    },
+
+    // ② 곱셈과 나눗셈의 혼합 계산 (왼쪽부터 계산, 나눗셈은 항상 나누어떨어짐, 답이 너무 커지지 않게 제한)
+    g5s1_mixed_mul_div() {
+        const divFirst = Math.random() < 0.5;
+        let formula, answer;
+        if (divFirst) {
+            const divisor = randInt(2, 9);
+            const quotient = randInt(2, 20);
+            const dividend = divisor * quotient;
+            let multiplier = randInt(2, 9);
+            let result = quotient * multiplier;
+            if (result > 200) { multiplier = Math.max(2, Math.floor(200 / quotient)); result = quotient * multiplier; }
+            formula = `${dividend} ÷ ${divisor} × ${multiplier}`;
+            answer = result;
+        } else {
+            const n1 = randInt(2, 20);
+            const n2 = randInt(2, 9);
+            const product = n1 * n2;
+            const candidates = [];
+            for (let d = 2; d <= 9; d++) if (product % d === 0) candidates.push(d);
+            const divisor = candidates[randInt(0, candidates.length - 1)];
+            formula = `${n1} × ${n2} ÷ ${divisor}`;
+            answer = product / divisor;
+        }
+        return { formulaFront: formula, formulaBack: formula, answer: String(answer) };
+    },
+
+    // ③ 덧셈·뺄셈·곱셈의 혼합 계산 (곱셈을 먼저 계산, 최종 결과 비음수)
+    g5s1_mixed_add_sub_mul() {
+        const n2 = randInt(2, 9);
+        const n3 = randInt(2, 9);
+        const mulResult = n2 * n3;
+
+        const op1 = Math.random() < 0.5 ? "+" : "-";
+        const n1 = op1 === "+" ? randInt(5, 50) : randInt(mulResult, mulResult + 50);
+        const afterFirst = op1 === "+" ? n1 + mulResult : n1 - mulResult;
+
+        let op2 = Math.random() < 0.5 ? "+" : "-";
+        if (afterFirst === 0) op2 = "+";
+        const n4 = op2 === "+" ? randInt(1, 30) : randInt(1, afterFirst);
+        const final = op2 === "+" ? afterFirst + n4 : afterFirst - n4;
+
+        const formula = `${n1} ${op1} ${n2} × ${n3} ${op2} ${n4}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(final) };
+    },
+
+    // ④ 사칙연산 혼합 계산 (나눗셈 → 곱셈 순서로 먼저 계산 후 덧셈/뺄셈, 나눗셈은 나누어떨어짐)
+    g5s1_mixed_all_ops() {
+        const divisor = randInt(2, 9);
+        const quotient = randInt(2, 12);
+        const n2 = divisor * quotient; // 나눗셈 피제수 (나누어떨어짐 보장)
+        const n4 = randInt(2, 9);
+        const mulDivResult = quotient * n4;
+
+        const addOp = Math.random() < 0.5 ? "+" : "-";
+        const n1 = addOp === "+" ? randInt(5, 60) : randInt(mulDivResult, mulDivResult + 60);
+        const final = addOp === "+" ? n1 + mulDivResult : n1 - mulDivResult;
+
+        const formula = `${n1} ${addOp} ${n2} ÷ ${divisor} × ${n4}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(final) };
+    },
+
+    // ⑤ 괄호가 있는 혼합 계산 (괄호 안을 먼저 계산, 괄호 결과와 전체 결과 모두 자연수)
+    g5s1_mixed_parentheses() {
+        const divisor = randInt(2, 9);
+        const afterDiv = randInt(2, 15);
+        const parenResult = divisor * afterDiv; // 괄호 안 결과 (나눗셈이 나누어떨어지도록 역산)
+
+        const parenOp = Math.random() < 0.5 ? "+" : "-";
+        let a, b;
+        if (parenOp === "+") {
+            b = randInt(1, parenResult - 1);
+            a = parenResult - b;
+        } else {
+            b = randInt(1, 40);
+            a = parenResult + b;
+        }
+
+        let outerOp = Math.random() < 0.5 ? "+" : "-";
+        const d = outerOp === "+" ? randInt(1, 30) : randInt(1, afterDiv);
+        const final = outerOp === "+" ? afterDiv + d : afterDiv - d;
+
+        const formula = `(${a} ${parenOp} ${b}) ÷ ${divisor} ${outerOp} ${d}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(final) };
+    },
+
+    /* ========== 5학년 1학기 - 약수와 배수 ========== */
+
+    // ⑥ 자연수의 약수 찾기 (목록이 너무 길지 않은 수 위주로 생성)
+    g5s1_factor_list() {
+        const n = generateUntilValid(
+            () => randInt(2, 100),
+            (v) => getDivisors(v).length <= 8
+        );
+        const formula = `${n}의 약수`;
+        return { formulaFront: formula, formulaBack: formula, answer: getDivisors(n).join(", ") };
+    },
+
+    // ⑦ 약수의 개수
+    g5s1_factor_count() {
+        const n = randInt(2, 100);
+        const formula = `${n}의 약수는 모두 몇 개인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: `${getDivisors(n).length}개` };
+    },
+
+    // ⑧ 몇 번째 배수 (0은 배수 목록에 포함하지 않음: 몇 번째가 1 이상이므로 자동 충족)
+    g5s1_multiple_nth() {
+        const base = randInt(2, 20);
+        const nth = randInt(2, 15);
+        const formula = `${base}의 ${nth}번째 배수`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(base * nth) };
+    },
+
+    // ⑨ 배수인지 판단 (두 결과가 충분히 골고루 출제되도록 50% 확률로 분기)
+    g5s1_multiple_check() {
+        const base = randInt(2, 20);
+        const isMultiple = Math.random() < 0.5;
+        let candidate;
+        if (isMultiple) {
+            candidate = base * randInt(1, 15);
+        } else {
+            candidate = generateUntilValid(
+                () => randInt(base + 1, base * 15),
+                (v) => v % base !== 0
+            );
+        }
+        const formula = `${candidate}는 ${base}의 배수인가?`;
+        return { formulaFront: formula, formulaBack: formula, answer: isMultiple ? "배수입니다" : "배수가 아닙니다" };
+    },
+
+    // ⑩ 최대공약수 (1인 경우와 2 이상인 경우 모두 자연 발생)
+    g5s1_gcd() {
+        const a = randInt(2, 100);
+        const b = randInt(2, 100);
+        const formula = `${a}${koreanMixedConnector(a)} ${b}의 최대공약수`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(gcd(a, b)) };
+    },
+
+    // ⑪ 최소공배수 (같은 두 수 제외, 답이 너무 커지지 않도록 제한)
+    g5s1_lcm() {
+        const pair = generateUntilValid(
+            () => ({ a: randInt(2, 30), b: randInt(2, 30) }),
+            (v) => v.a !== v.b && lcm(v.a, v.b) <= 200
+        );
+        const formula = `${pair.a}${koreanMixedConnector(pair.a)} ${pair.b}의 최소공배수`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(lcm(pair.a, pair.b)) };
+    },
+
+    /* ========== 5학년 1학기 - 변화와 관계: 대응 관계 ========== */
+
+    // ⑫ 대응 관계의 값 구하기 (□ → △)
+    g5s1_correspondence_forward() {
+        const type = randInt(0, 2);
+        const boxVal = randInt(2, 15);
+        let a, b, expr, triangleVal;
+        if (type === 0) {
+            a = randInt(2, 9);
+            triangleVal = boxVal * a;
+            expr = `△ = □ × ${a}`;
+        } else if (type === 1) {
+            a = randInt(2, 30);
+            triangleVal = boxVal + a;
+            expr = `△ = □ + ${a}`;
+        } else {
+            a = randInt(2, 9);
+            b = randInt(1, 20);
+            triangleVal = boxVal * a + b;
+            expr = `△ = □ × ${a} + ${b}`;
+        }
+        const formula = `${expr}일 때 □가 ${boxVal}이면 △는?`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(triangleVal) };
+    },
+
+    // ⑬ 대응 관계에서 처음 값 구하기 (△ → □, □가 항상 자연수가 되도록 역산 가능한 값만 사용)
+    g5s1_correspondence_backward() {
+        const type = randInt(0, 2);
+        let a, b, boxVal, triangleVal, expr;
+        if (type === 0) {
+            a = randInt(2, 9);
+            boxVal = randInt(2, 15);
+            triangleVal = boxVal * a;
+            expr = `△ = □ × ${a}`;
+        } else if (type === 1) {
+            a = randInt(2, 30);
+            boxVal = randInt(2, 20);
+            triangleVal = boxVal + a;
+            expr = `△ = □ + ${a}`;
+        } else {
+            a = randInt(2, 9);
+            b = randInt(1, 20);
+            boxVal = randInt(2, 15);
+            triangleVal = boxVal * a + b;
+            expr = `△ = □ × ${a} + ${b}`;
+        }
+        const formula = `${expr}일 때 △가 ${triangleVal}이면 □는?`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(boxVal) };
+    },
+
+    // ⑭ 대응표의 빈칸 (규칙이 한 가지로 명확히 드러나도록 연속된 □ 값 사용)
+    g5s1_correspondence_table() {
+        const count = randInt(3, 5);
+        const startBox = randInt(1, 5);
+        const boxVals = [];
+        for (let i = 0; i < count; i++) boxVals.push(startBox + i);
+
+        const isMultiply = Math.random() < 0.5;
+        const a = isMultiply ? randInt(2, 9) : randInt(2, 20);
+        const triangleVals = boxVals.map((v) => (isMultiply ? v * a : v + a));
+
+        const blankIdx = randInt(1, count - 1); // 첫 항은 항상 제시
+        const answer = triangleVals[blankIdx];
+
+        const boxDisplay = boxVals.join(", ");
+        const triDisplay = triangleVals.map((v, i) => (i === blankIdx ? "?" : v)).join(", ");
+        const formula = `□: ${boxDisplay}<br>△: ${triDisplay}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(answer) };
+    },
+
+    /* ========== 5학년 1학기 - 약분과 통분 ========== */
+    // 세로형 분수 표시(makeFractionHTML)와 대분수 공용 함수(formatMixedNumber)를 재사용한다.
+
+    // ⑮ 크기가 같은 분수의 빈칸
+    g5s1_fraction_equivalent() {
+        const b = randInt(2, 12);
+        const a = randInt(1, b - 1);
+        const k = randInt(2, 9);
+        const a2 = a * k;
+        const b2 = b * k;
+
+        const blankNumerator = Math.random() < 0.5;
+        const rightFrac = blankNumerator ? makeFractionHTML("?", b2) : makeFractionHTML(a2, "?");
+        const formula = `${makeFractionHTML(a, b)} = ${rightFrac}`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(blankNumerator ? a2 : b2) };
+    },
+
+    // ⑯ 분수를 약분하기 (처음부터 기약분수인 문제는 생성하지 않음: 배율 k>=2 보장)
+    g5s1_fraction_reduce() {
+        const k = randInt(2, 9);
+        const redA = randInt(1, 11);
+        const redB = randInt(redA + 1, 12);
+        const simplified = simplifyFraction(redA, redB); // 기약분수 보장
+        const a = simplified.numerator * k;
+        const b = simplified.denominator * k;
+
+        const formula = `${makeFractionHTML(a, b)}를 가장 간단한 분수로 나타내기`;
+        return { formulaFront: formula, formulaBack: formula, answer: makeFractionHTML(simplified.numerator, simplified.denominator) };
+    },
+
+    // ⑰ 약분할 수 있는 수 찾기 (분자·분모의 최대공약수를 구함)
+    g5s1_fraction_reduce_gcd() {
+        const g = randInt(2, 12);
+        const redA = randInt(1, 8);
+        const redB = randInt(redA + 1, 9);
+        const simplified = simplifyFraction(redA, redB);
+        const a = simplified.numerator * g;
+        const b = simplified.denominator * g;
+
+        const formula = `${makeFractionHTML(a, b)}을 약분할 때 분자와 분모를 함께 나눌 수 있는 가장 큰 수`;
+        return { formulaFront: formula, formulaBack: formula, answer: String(g) };
+    },
+
+    // ⑱ 두 분수 통분하기 (최소공배수를 공통분모로 사용)
+    g5s1_fraction_common_denom() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+
+        const commonDenom = lcm(d1, d2);
+        const newN1 = n1 * (commonDenom / d1);
+        const newN2 = n2 * (commonDenom / d2);
+
+        const formula = `${makeFractionHTML(n1, d1)}${koreanMixedConnector(d1)} ${makeFractionHTML(n2, d2)}를 통분하기`;
+        const answer = `${makeFractionHTML(newN1, commonDenom)}, ${makeFractionHTML(newN2, commonDenom)}`;
+        return { formulaFront: formula, formulaBack: formula, answer };
+    },
+
+    // ⑲ 분수의 크기 비교 (정수 교차곱만 사용, 같은 크기 문제도 일정 비율 포함)
+    g5s1_fraction_compare() {
+        const useMixed = Math.random() < 0.4;
+        const equalCase = Math.random() < 0.2;
+
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+
+        const n1 = randInt(1, d1 - 1);
+        let n2;
+        if (equalCase) {
+            const candidateN2 = (n1 * d2) / d1;
+            n2 = Number.isInteger(candidateN2) && candidateN2 >= 1 && candidateN2 < d2
+                ? candidateN2
+                : randInt(1, d2 - 1);
+        } else {
+            n2 = randInt(1, d2 - 1);
+        }
+
+        let whole1 = 0, whole2 = 0;
+        if (useMixed) {
+            whole1 = randInt(1, 5);
+            whole2 = equalCase ? whole1 : randInt(1, 5);
+        }
+
+        const symbol = compareUnlikeFractions(whole1, n1, d1, whole2, n2, d2);
+        const left = useMixed ? formatMixedNumber(whole1, n1, d1) : makeFractionHTML(n1, d1);
+        const right = useMixed ? formatMixedNumber(whole2, n2, d2) : makeFractionHTML(n2, d2);
+
+        const formula = `${left} ( ? ) ${right}`;
+        return { formulaFront: formula, formulaBack: formula, answer: symbol };
+    },
+
+    /* ========== 5학년 1학기 - 분수의 덧셈과 뺄셈 (분모가 다름) ========== */
+    // computeUnlikeFractionResult(통분→계산→약분→정규화)와 formatMixedNumber를 재사용한다.
+
+    // ⑳ 진분수 + 진분수
+    g5s1_unlike_fraction_add() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+
+        const result = computeUnlikeFractionResult(0, n1, d1, 0, n2, d2, "+");
+        const formula = `${makeFractionHTML(n1, d1)} + ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ㉑ 대분수 + 진분수
+    g5s1_unlike_fraction_mixed_proper_add() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const whole1 = randInt(1, 6);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+
+        const result = computeUnlikeFractionResult(whole1, n1, d1, 0, n2, d2, "+");
+        const formula = `${formatMixedNumber(whole1, n1, d1)} + ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ㉒ 대분수 + 대분수
+    g5s1_unlike_fraction_mixed_add() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const whole1 = randInt(1, 5);
+        const whole2 = randInt(1, 5);
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+
+        const result = computeUnlikeFractionResult(whole1, n1, d1, whole2, n2, d2, "+");
+        const formula = `${formatMixedNumber(whole1, n1, d1)} + ${formatMixedNumber(whole2, n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ㉓ 진분수 - 진분수 (첫 분수 >= 둘째 분수, 음수 없음)
+    g5s1_unlike_fraction_sub() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const pair = generateUntilValid(
+            () => ({ n1: randInt(1, d1 - 1), n2: randInt(1, d2 - 1) }),
+            (v) => v.n1 * d2 >= v.n2 * d1
+        );
+
+        const result = computeUnlikeFractionResult(0, pair.n1, d1, 0, pair.n2, d2, "-");
+        const formula = `${makeFractionHTML(pair.n1, d1)} - ${makeFractionHTML(pair.n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ㉔ 대분수 - 진분수 (받아내림 있는/없는 경우 모두 자연 발생)
+    g5s1_unlike_fraction_mixed_proper_sub() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+        const whole1 = randInt(2, 6); // 받아내림 발생 시에도 비음수가 되도록 여유 확보
+        const n1 = randInt(1, d1 - 1);
+        const n2 = randInt(1, d2 - 1);
+
+        const result = computeUnlikeFractionResult(whole1, n1, d1, 0, n2, d2, "-");
+        const formula = `${formatMixedNumber(whole1, n1, d1)} - ${makeFractionHTML(n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    // ㉕ 대분수 - 대분수 (첫 번째 수 >= 두 번째 수, 결과 0인 문제는 자연 발생 빈도만 허용)
+    g5s1_unlike_fraction_mixed_sub() {
+        let d1, d2;
+        do { d1 = randInt(2, 12); d2 = randInt(2, 12); } while (d1 === d2);
+
+        const pair = generateUntilValid(
+            () => ({ whole1: randInt(1, 5), whole2: randInt(1, 5), n1: randInt(1, d1 - 1), n2: randInt(1, d2 - 1) }),
+            (v) => (v.whole1 * d1 + v.n1) * d2 >= (v.whole2 * d2 + v.n2) * d1
+        );
+
+        const result = computeUnlikeFractionResult(pair.whole1, pair.n1, d1, pair.whole2, pair.n2, d2, "-");
+        const formula = `${formatMixedNumber(pair.whole1, pair.n1, d1)} - ${formatMixedNumber(pair.whole2, pair.n2, d2)}`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatMixedNumber(result.whole, result.numerator, result.denominator) };
+    },
+
+    /* ========== 5학년 1학기 - 도형과 측정: 다각형의 둘레와 넓이 ========== */
+    // 모든 넓이 유형은 generateUntilValid + formatCm/formatCm2 공용 헬퍼를 재사용해 중복을 줄인다.
+
+    // ㉖ 직사각형의 둘레
+    g5s1_rect_perimeter() {
+        const dim = generateUntilValid(
+            () => ({ w: randInt(2, 50), h: randInt(2, 50) }),
+            (v) => v.w !== v.h
+        );
+        const formula = `가로 ${dim.w}cm, 세로 ${dim.h}cm인 직사각형의 둘레`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm(2 * (dim.w + dim.h)) };
+    },
+
+    // ㉗ 정사각형의 둘레
+    g5s1_square_perimeter() {
+        const side = randInt(2, 50);
+        const formula = `한 변이 ${side}cm인 정사각형의 둘레`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm(side * 4) };
+    },
+
+    // ㉘ 직사각형의 넓이
+    g5s1_rect_area() {
+        const dim = generateUntilValid(
+            () => ({ w: randInt(2, 50), h: randInt(2, 50) }),
+            (v) => v.w !== v.h
+        );
+        const formula = `가로 ${dim.w}cm, 세로 ${dim.h}cm인 직사각형의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(dim.w * dim.h) };
+    },
+
+    // ㉙ 정사각형의 넓이
+    g5s1_square_area() {
+        const side = randInt(2, 30);
+        const formula = `한 변이 ${side}cm인 정사각형의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(side * side) };
+    },
+
+    // ㉚ 평행사변형의 넓이 (밑변 × 높이)
+    g5s1_parallelogram_area() {
+        const base = randInt(2, 40);
+        const height = randInt(2, 30);
+        const formula = `밑변 ${base}cm, 높이 ${height}cm인 평행사변형의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(base * height) };
+    },
+
+    // ㉛ 삼각형의 넓이 (밑변 × 높이가 짝수가 되도록 생성해 답이 자연수)
+    g5s1_triangle_area() {
+        const dim = generateUntilValid(
+            () => ({ base: randInt(2, 40), height: randInt(2, 30) }),
+            (v) => (v.base * v.height) % 2 === 0
+        );
+        const formula = `밑변 ${dim.base}cm, 높이 ${dim.height}cm인 삼각형의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2((dim.base * dim.height) / 2) };
+    },
+
+    // ㉜ 사다리꼴의 넓이 (윗변≠아랫변, (윗변+아랫변)×높이가 짝수)
+    g5s1_trapezoid_area() {
+        const dim = generateUntilValid(
+            () => ({ top: randInt(2, 30), bottom: randInt(2, 40), height: randInt(2, 20) }),
+            (v) => v.top !== v.bottom && ((v.top + v.bottom) * v.height) % 2 === 0
+        );
+        const formula = `윗변 ${dim.top}cm, 아랫변 ${dim.bottom}cm, 높이 ${dim.height}cm인 사다리꼴의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2(((dim.top + dim.bottom) * dim.height) / 2) };
+    },
+
+    // ㉝ 마름모의 넓이 (두 대각선의 곱이 짝수)
+    g5s1_rhombus_area() {
+        const dim = generateUntilValid(
+            () => ({ d1: randInt(2, 40), d2: randInt(2, 40) }),
+            (v) => (v.d1 * v.d2) % 2 === 0
+        );
+        const formula = `두 대각선이 ${dim.d1}cm, ${dim.d2}cm인 마름모의 넓이`;
+        return { formulaFront: formula, formulaBack: formula, answer: formatCm2((dim.d1 * dim.d2) / 2) };
     }
 };
 
